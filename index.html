@@ -1,0 +1,1706 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Care Transition & Placement Outcome Analytics</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet"/>
+<!-- REACT CDN -->
+<script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+<script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<style>
+:root{
+  --bg:#f0f4f8;--surface:#ffffff;--accent:#0077b6;--accent2:#3b82f6;
+  --accent3:#d97706;--accent4:#dc2626;--text:#1e293b;--muted:#475569;
+  --border:#cbd5e1;
+  --grad1:linear-gradient(135deg,#0077b6,#3b82f6);
+  --grad2:linear-gradient(135deg,#d97706,#dc2626);
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);overflow:hidden;height:100vh;}
+#root{height:100vh;width:100%;position:relative;}
+
+/* LOGIN — Split Screen Design */
+.login-bg{height:100vh;width:100%;display:flex;position:relative;overflow:hidden;background:#fff;}
+.login-left{flex:1.1;position:relative;overflow:hidden;background:linear-gradient(160deg,#0c4a6e 0%,#0077b6 45%,#0ea5e9 100%);display:flex;flex-direction:column;justify-content:center;padding:60px;}
+.login-left::before{content:'';position:absolute;inset:0;background-image:radial-gradient(circle at 20% 20%,rgba(255,255,255,.08) 0,transparent 40%),radial-gradient(circle at 80% 70%,rgba(255,255,255,.08) 0,transparent 40%);}
+.hosp-illustration{position:absolute;inset:0;opacity:.9;}
+.hosp-building{position:absolute;bottom:0;left:0;width:100%;}
+.left-content{position:relative;z-index:5;color:#fff;}
+.left-badge{display:inline-flex;align-items:center;gap:8px;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.25);border-radius:30px;padding:6px 16px;font-size:11px;font-weight:600;letter-spacing:.5px;margin-bottom:24px;}
+.left-title{font-family:'Space Grotesk',sans-serif;font-size:38px;font-weight:700;line-height:1.25;margin-bottom:16px;}
+.left-sub{font-size:14px;color:#bae6fd;line-height:1.7;max-width:420px;margin-bottom:36px;}
+.left-stats{display:flex;gap:32px;}
+.left-stat-num{font-family:'Space Grotesk',sans-serif;font-size:26px;font-weight:700;}
+.left-stat-label{font-size:11px;color:#bae6fd;margin-top:2px;}
+.floating-card{position:absolute;background:rgba(255,255,255,.95);border-radius:14px;padding:14px 18px;box-shadow:0 12px 30px rgba(0,0,0,.2);display:flex;align-items:center;gap:10px;z-index:6;animation:floatCard 5s ease-in-out infinite;}
+@keyframes floatCard{0%,100%{transform:translateY(0);}50%{transform:translateY(-12px);}}
+.fc1{top:14%;right:8%;animation-delay:0s;}
+.fc2{bottom:18%;right:14%;animation-delay:1.5s;}
+.fc-icon{width:34px;height:34px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;}
+.fc-text-title{font-size:11px;font-weight:700;color:#1e293b;}
+.fc-text-sub{font-size:9px;color:#64748b;}
+
+.login-right{flex:1;display:flex;justify-content:center;align-items:center;background:#fff;padding:40px;}
+.login-card{width:100%;max-width:380px;}
+.login-logo{margin-bottom:32px;}
+.login-icon{width:56px;height:56px;background:linear-gradient(135deg,#0077b6,#3b82f6);border-radius:14px;display:flex;align-items:center;justify-content:center;margin-bottom:18px;box-shadow:0 8px 20px rgba(0,119,182,.25);}
+.login-icon svg{width:28px;height:28px;}
+.login-title{font-family:'Space Grotesk',sans-serif;font-size:24px;font-weight:700;color:#0f172a;}
+.login-sub{font-size:13px;color:var(--muted);margin-top:6px;}
+.field-group{margin-bottom:20px;}
+.field-label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bottom:8px;text-transform:uppercase;letter-spacing:.8px;}
+.field-input{width:100%;background:#f8fafc;border:1px solid var(--border);border-radius:10px;padding:14px 16px;color:var(--text);font-size:14px;outline:none;transition:all .3s;}
+.field-input:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(0,119,182,.1);background:#fff;}
+.err-msg{color:var(--accent4);font-size:12px;margin-bottom:12px;}
+.btn-login{width:100%;background:linear-gradient(135deg,#0077b6,#3b82f6);border:none;border-radius:10px;padding:15px;font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:15px;color:#fff;cursor:pointer;transition:all .3s;letter-spacing:.5px;}
+.btn-login:hover{opacity:.9;transform:translateY(-1px);box-shadow:0 8px 20px rgba(0,119,182,.3);}
+.login-hint{text-align:center;margin-top:20px;font-size:11px;color:var(--muted);}
+.login-hint span{color:#0077b6;font-weight:700;}
+@media (max-width:860px){.login-left{display:none;}}
+
+/* SHELL */
+.shell{display:flex;height:100vh;width:100%;}
+.sidebar{width:220px;background:#1e293b;display:flex;flex-direction:column;padding:24px 0;flex-shrink:0;box-shadow:4px 0 20px rgba(0,0,0,.08);}
+.sidebar-logo{padding:0 20px 24px;border-bottom:1px solid rgba(255,255,255,.08);}
+.s-icon{width:36px;height:36px;background:var(--grad1);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px;margin-bottom:10px;}
+.s-title{font-family:'Space Grotesk',sans-serif;font-size:13px;font-weight:700;color:#e0f2fe;line-height:1.3;}
+.s-sub{font-size:10px;color:#94a3b8;margin-top:2px;}
+.react-badge{display:flex;align-items:center;gap:6px;margin-top:14px;background:rgba(97,218,251,.1);border:1px solid rgba(97,218,251,.35);border-radius:20px;padding:5px 10px;width:fit-content;position:relative;}
+.react-badge span:last-child{font-size:10px;font-weight:700;color:#61dafb;letter-spacing:.3px;}
+.react-badge svg{animation:spin-react 4s linear infinite;}
+@keyframes spin-react{from{transform:rotate(0deg);}to{transform:rotate(360deg);}}
+.react-dot{width:6px;height:6px;border-radius:50%;background:#61dafb;box-shadow:0 0 0 0 rgba(97,218,251,.6);animation:pulse-react 1.6s ease-out infinite;}
+@keyframes pulse-react{0%{box-shadow:0 0 0 0 rgba(97,218,251,.6);}70%{box-shadow:0 0 0 8px rgba(97,218,251,0);}100%{box-shadow:0 0 0 0 rgba(97,218,251,0);}}
+.nav-list{flex:1;padding:16px 0;overflow-y:auto;}
+.nav-item{display:flex;align-items:center;gap:10px;padding:11px 20px;cursor:pointer;font-size:12.5px;color:#94a3b8;border-left:3px solid transparent;transition:all .25s;border-radius:0 8px 8px 0;margin:1px 8px 1px 0;}
+.nav-item:hover{color:#e2e8f0;background:rgba(255,255,255,.06);}
+.nav-item.active{color:#7dd3fc;background:rgba(59,130,246,.15);border-left-color:#3b82f6;font-weight:600;}
+.n-icon{font-size:15px;flex-shrink:0;width:20px;text-align:center;}
+.sidebar-footer{padding:16px 20px;border-top:1px solid rgba(255,255,255,.08);}
+.user-badge{display:flex;align-items:center;gap:10px;}
+.user-avatar{width:32px;height:32px;background:var(--grad1);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:#fff;}
+.u-name{font-size:12px;font-weight:600;color:#e2e8f0;}
+.u-role{font-size:10px;color:#64748b;}
+.btn-logout{background:none;border:1px solid rgba(255,255,255,.15);border-radius:6px;padding:4px 8px;color:#94a3b8;font-size:10px;cursor:pointer;}
+.btn-logout:hover{color:#fca5a5;border-color:#fca5a5;}
+
+/* MAIN */
+.main-area{flex:1;display:flex;flex-direction:column;overflow:hidden;}
+.topbar{height:56px;background:#fff;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;padding:0 28px;flex-shrink:0;box-shadow:0 1px 8px rgba(0,0,0,.05);}
+.topbar-left{display:flex;align-items:center;gap:12px;}
+.page-badge{font-family:'Space Grotesk',sans-serif;font-size:10px;font-weight:700;background:#eff6ff;color:#1d4ed8;padding:3px 10px;border-radius:20px;border:1px solid #bfdbfe;}
+.page-title-top{font-size:14px;font-weight:600;color:var(--text);}
+.topbar-right{display:flex;align-items:center;gap:12px;}
+.live-dot{width:8px;height:8px;background:#16a34a;border-radius:50%;animation:blink 2s infinite;}
+@keyframes blink{0%,100%{opacity:1;}50%{opacity:.3;}}
+.live-label{font-size:11px;color:var(--muted);}
+.date-chip{font-size:11px;color:var(--muted);background:#f8fafc;border:1px solid var(--border);border-radius:6px;padding:4px 10px;}
+.content{flex:1;overflow-y:auto;padding:28px;background:var(--bg);}
+.page-anim-next{animation:slideInRight .45s cubic-bezier(.22,1,.36,1);}
+.page-anim-prev{animation:slideInLeft .45s cubic-bezier(.22,1,.36,1);}
+.page-anim-dot{animation:fadeInUp .45s cubic-bezier(.22,1,.36,1);}
+@keyframes slideInRight{from{opacity:0;transform:translateX(40px);}to{opacity:1;transform:translateX(0);}}
+@keyframes slideInLeft{from{opacity:0;transform:translateX(-40px);}to{opacity:1;transform:translateX(0);}}
+@keyframes fadeInUp{from{opacity:0;transform:translateY(16px);}to{opacity:1;transform:translateY(0);}}
+.nav-footer{height:56px;border-top:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;padding:0 28px;background:#fff;flex-shrink:0;}
+.btn-nav{display:flex;align-items:center;gap:8px;background:#f8fafc;border:1px solid var(--border);border-radius:10px;padding:10px 20px;color:var(--text);font-size:13px;font-weight:500;cursor:pointer;transition:all .25s;}
+.btn-nav:hover{background:#eff6ff;border-color:var(--accent);color:var(--accent);}
+.btn-nav:disabled{opacity:.35;cursor:not-allowed;}
+.btn-nav.primary{background:var(--grad1);border:none;color:#fff;font-weight:600;}
+.btn-nav.primary:hover{opacity:.9;transform:translateY(-1px);}
+.page-dots{display:flex;gap:6px;align-items:center;}
+.dot{width:7px;height:7px;border-radius:50%;background:#cbd5e1;transition:all .3s;cursor:pointer;}
+.dot.active-dot{background:var(--accent);width:20px;border-radius:4px;}
+
+/* CARDS & GRIDS */
+.section-header{margin-bottom:28px;}
+.eyebrow{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:var(--accent);margin-bottom:8px;}
+.sec-h2{font-family:'Space Grotesk',sans-serif;font-size:26px;font-weight:700;color:var(--text);line-height:1.2;}
+.sec-p{font-size:13px;color:var(--muted);margin-top:8px;line-height:1.6;}
+.card{background:#fff;border:1px solid var(--border);border-radius:14px;padding:22px;transition:all .3s;box-shadow:0 1px 6px rgba(0,0,0,.04);}
+.card:hover{border-color:#93c5fd;box-shadow:0 4px 16px rgba(0,119,182,.08);}
+.card-title{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--muted);margin-bottom:14px;}
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+.grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;}
+.grid-4{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;}
+.span-2{grid-column:span 2;}
+.kpi-card{background:#fff;border:1px solid var(--border);border-radius:14px;padding:20px 22px;position:relative;overflow:hidden;box-shadow:0 1px 6px rgba(0,0,0,.04);}
+.kpi-top{position:absolute;top:0;left:0;right:0;height:3px;}
+.kpi-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--muted);margin-bottom:10px;}
+.kpi-value{font-family:'Space Grotesk',sans-serif;font-size:32px;font-weight:700;color:var(--text);}
+.kpi-sub{font-size:11px;color:var(--muted);margin-top:4px;}
+.kpi-trend{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:600;margin-top:8px;}
+.trend-up{color:#16a34a;}.trend-down{color:#dc2626;}
+
+/* CONTROLS */
+.control-group{margin-bottom:20px;}
+.control-label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--muted);margin-bottom:10px;}
+.ctrl-input{width:100%;background:#f8fafc;border:1px solid var(--border);border-radius:8px;padding:10px 14px;color:var(--text);font-size:13px;outline:none;}
+.slider-wrap{display:flex;align-items:center;gap:12px;}
+.slider-wrap input[type=range]{flex:1;accent-color:var(--accent);}
+.slider-val{font-size:12px;font-weight:700;color:var(--accent);min-width:36px;}
+.toggle-group{display:flex;flex-direction:column;gap:10px;}
+.toggle-row{display:flex;align-items:center;justify-content:space-between;background:#f8fafc;border:1px solid var(--border);border-radius:10px;padding:12px 16px;}
+.toggle-label{font-size:13px;color:var(--text);font-weight:500;}
+.toggle-desc{font-size:11px;color:var(--muted);}
+.toggle{position:relative;width:40px;height:22px;flex-shrink:0;}
+.toggle input{opacity:0;width:0;height:0;}
+.toggle-track{position:absolute;inset:0;background:#cbd5e1;border-radius:11px;transition:.3s;cursor:pointer;}
+.toggle input:checked+.toggle-track{background:var(--accent);}
+.toggle-track::before{content:'';position:absolute;width:16px;height:16px;left:3px;top:3px;background:#fff;border-radius:50%;transition:.3s;box-shadow:0 1px 3px rgba(0,0,0,.2);}
+.toggle input:checked+.toggle-track::before{transform:translateX(18px);}
+.apply-btn{width:100%;background:var(--grad1);border:none;border-radius:10px;padding:14px;font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:14px;color:#fff;cursor:pointer;margin-top:8px;}
+.toast{text-align:center;color:#16a34a;font-size:12px;font-weight:600;margin-top:8px;}
+
+/* BAR CHART */
+.bar-chart{display:flex;align-items:flex-end;gap:6px;height:160px;padding:8px 0 0;}
+.bar-col{flex:1;display:flex;flex-direction:column;align-items:center;gap:6px;}
+.bar-fill{width:100%;border-radius:6px 6px 0 0;transition:height .8s ease;position:relative;}
+.bar-fill:hover{opacity:.8;}
+.bar-tip{position:absolute;top:-28px;left:50%;transform:translateX(-50%);background:#1e293b;color:#e2e8f0;border-radius:6px;padding:3px 8px;font-size:10px;white-space:nowrap;pointer-events:none;opacity:0;transition:.2s;}
+.bar-fill:hover .bar-tip{opacity:1;}
+.bar-label{font-size:9px;color:var(--muted);text-align:center;font-weight:500;}
+
+/* TABLE */
+.data-table{width:100%;border-collapse:collapse;font-size:12px;}
+.data-table th{text-align:left;padding:10px 14px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--muted);border-bottom:2px solid var(--border);background:#f8fafc;}
+.data-table td{padding:10px 14px;color:var(--text);border-bottom:1px solid #f1f5f9;}
+.data-table tr:hover td{background:#f0f9ff;}
+.badge{display:inline-flex;align-items:center;padding:2px 10px;border-radius:20px;font-size:10px;font-weight:700;}
+.bg-green{background:#dcfce7;color:#15803d;}
+.bg-amber{background:#fef9c3;color:#a16207;}
+.bg-red{background:#fee2e2;color:#b91c1c;}
+.bg-blue{background:#dbeafe;color:#1d4ed8;}
+
+/* PROJECT INFO */
+.info-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;}
+.info-card{background:#fff;border:1px solid var(--border);border-radius:14px;padding:20px;box-shadow:0 1px 6px rgba(0,0,0,.04);}
+.info-card h3{font-family:'Space Grotesk',sans-serif;font-size:14px;font-weight:700;color:#1d4ed8;margin-bottom:12px;}
+.info-card p,.info-card li{font-size:12.5px;color:var(--muted);line-height:1.7;}
+.info-card ul{padding-left:16px;}
+.tech-pills{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px;}
+.tech-pill{background:#eff6ff;border:1px solid #bfdbfe;color:#1d4ed8;border-radius:20px;padding:4px 12px;font-size:11px;font-weight:600;}
+.wf-step{display:flex;gap:14px;align-items:flex-start;padding:10px 0;border-bottom:1px dashed #e2e8f0;}
+.wf-num{width:24px;height:24px;border-radius:50%;background:var(--grad1);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;flex-shrink:0;color:#fff;}
+.wf-text{font-size:12.5px;color:var(--muted);line-height:1.5;}
+
+/* PREDICTION */
+.pred-card{background:#fff;border:1px solid var(--border);border-radius:14px;padding:22px;position:relative;overflow:hidden;box-shadow:0 1px 6px rgba(0,0,0,.04);}
+.pred-bg{position:absolute;top:-30px;right:-30px;width:100px;height:100px;border-radius:50%;opacity:.06;}
+.pred-icon{font-size:26px;margin-bottom:12px;}
+.pred-label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--muted);margin-bottom:6px;}
+.pred-value{font-family:'Space Grotesk',sans-serif;font-size:36px;font-weight:700;margin-bottom:8px;}
+.rec-list{list-style:none;display:flex;flex-direction:column;gap:10px;}
+.rec-item{display:flex;gap:12px;align-items:flex-start;background:#f8fafc;border:1px solid var(--border);border-radius:10px;padding:12px 14px;}
+.rec-text{font-size:12.5px;color:var(--muted);line-height:1.5;}
+.rec-text strong{color:var(--text);font-weight:600;}
+.risk-row{display:flex;align-items:center;gap:12px;padding:8px 0;border-bottom:1px solid #f1f5f9;}
+.risk-name{flex:1;font-size:12px;color:var(--text);font-weight:500;}
+.risk-bar-wrap{flex:2;background:#f1f5f9;border-radius:20px;height:8px;overflow:hidden;}
+.risk-bar{height:100%;border-radius:20px;}
+.risk-pct{font-size:11px;font-weight:700;min-width:36px;text-align:right;}
+
+/* LINE CHART */
+.line-wrap{position:relative;height:200px;margin-top:12px;}
+.line-wrap svg{width:100%;height:100%;}
+.sankey-svg{width:100%;overflow:visible;}
+.sankey-link{fill:none;stroke-opacity:.3;}
+.sankey-label{font-size:11px;fill:#334155;font-family:'Inter',sans-serif;font-weight:500;}
+.sankey-val{font-size:9px;fill:#64748b;}
+
+/* ALERT CARDS */
+.alert-card{display:flex;align-items:center;justify-content:space-between;border-radius:10px;padding:12px 14px;margin-bottom:10px;}
+.alert-num{font-family:'Space Grotesk',sans-serif;font-size:22px;font-weight:700;}
+</style>
+</head>
+<body>
+<div id="root"></div>
+
+<script type="text/babel">
+const { useState, useEffect, useRef, useCallback } = React;
+
+// ── DATA HELPERS ──
+const depts=['Cardiology','General Med','ICU','Orthopedics','Neurology','Surgery'];
+const dests=['Home','SNF','Rehab','Readmit'];
+const risks=['Low','Medium','High'];
+const diags=['Hypertension','Fracture','Pneumonia','CHF','Stroke','Hip Replacement','Sepsis','Appendicitis'];
+
+function genRows(n){
+  const rows=[];
+  for(let i=0;i<n;i++){
+    const id='PT-'+(String(10000+i).slice(1));
+    const age=40+Math.floor(Math.random()*45);
+    const gender=Math.random()>.5?'M':'F';
+    const dept=depts[Math.floor(Math.random()*depts.length)];
+    const diag=diags[Math.floor(Math.random()*diags.length)];
+    const los=2+Math.floor(Math.random()*18);
+    const adm=new Date(2024,Math.floor(Math.random()*12),1+Math.floor(Math.random()*28));
+    const dis=new Date(adm); dis.setDate(dis.getDate()+los);
+    const dest=dests[Math.floor(Math.random()*dests.length)];
+    const riskI=dest==='Readmit'?2:(los>10?1:Math.floor(Math.random()*2));
+    const score=riskI===2?70+Math.floor(Math.random()*30):riskI===1?40+Math.floor(Math.random()*30):Math.floor(Math.random()*40);
+    rows.push({id,age,gender,dept,diag,los,adm:adm.toISOString().slice(0,10),dis:dis.toISOString().slice(0,10),dest,risk:risks[riskI],score,readmit:dest==='Readmit'?'Yes':'No',riskI});
+  }
+  return rows;
+}
+
+// ── DNA CANVAS ──
+function DNACanvas(){
+  const ref=useRef();
+  useEffect(()=>{
+    const canvas=ref.current; if(!canvas)return;
+    const ctx=canvas.getContext('2d');
+    let W,H,raf,t=0;
+    const CA=['#a855f7','#c084fc','#d946ef'],CB=['#ec4899','#f472b6','#fb7185'];
+    const GA='rgba(168,85,247,',GB='rgba(236,72,153,';
+    const NODES=18;
+    function resize(){W=canvas.width=canvas.offsetWidth||innerWidth;H=canvas.height=canvas.offsetHeight||innerHeight;}
+    resize(); window.addEventListener('resize',resize);
+    function draw(){
+      ctx.clearRect(0,0,W,H);
+      [{cx:W*.15,sp:.012,sc:1,al:.7},{cx:W*.5,sp:.010,sc:1.3,al:.5},{cx:W*.82,sp:.014,sc:.9,al:.65}].forEach((cfg,si)=>{
+        const amp=38*cfg.sc, sp=H/(NODES-1), ph=t*cfg.sp+(si*Math.PI*.7);
+        const pA=[],pB=[];
+        for(let i=0;i<NODES;i++){const a=ph+(i/NODES)*Math.PI*4;pA.push({x:cfg.cx+Math.cos(a)*amp,y:sp*i});pB.push({x:cfg.cx+Math.cos(a+Math.PI)*amp,y:sp*i});}
+        function strand(pts,C,G){
+          ctx.beginPath();ctx.moveTo(pts[0].x,pts[0].y);
+          for(let i=1;i<pts.length-1;i++){const mx=(pts[i].x+pts[i+1].x)/2,my=(pts[i].y+pts[i+1].y)/2;ctx.quadraticCurveTo(pts[i].x,pts[i].y,mx,my);}
+          const g=ctx.createLinearGradient(cfg.cx,0,cfg.cx,H);g.addColorStop(0,C[0]);g.addColorStop(.5,C[1]);g.addColorStop(1,C[2]);
+          ctx.strokeStyle=g;ctx.lineWidth=2.5*cfg.sc;ctx.globalAlpha=cfg.al;ctx.shadowBlur=12;ctx.shadowColor=G+'0.6)';ctx.stroke();ctx.shadowBlur=0;ctx.globalAlpha=1;
+        }
+        strand(pA,CA,GA);strand(pB,CB,GB);
+        for(let i=0;i<NODES;i++){
+          const ax=pA[i].x,ay=pA[i].y,bx=pB[i].x,by=pB[i].y;
+          if(Math.abs(ax-bx)>18*cfg.sc){
+            ctx.beginPath();ctx.moveTo(ax,ay);ctx.lineTo(bx,by);
+            const rg=ctx.createLinearGradient(ax,ay,bx,by);rg.addColorStop(0,'rgba(168,85,247,.5)');rg.addColorStop(.5,'rgba(236,72,153,.7)');rg.addColorStop(1,'rgba(168,85,247,.5)');
+            ctx.strokeStyle=rg;ctx.lineWidth=1.5*cfg.sc;ctx.globalAlpha=cfg.al*.8;ctx.stroke();ctx.globalAlpha=1;
+          }
+          [pA[i],pB[i]].forEach((p,pi)=>{ctx.beginPath();ctx.arc(p.x,p.y,3.5*cfg.sc,0,Math.PI*2);ctx.fillStyle=pi===0?CA[i%3]:CB[i%3];ctx.globalAlpha=cfg.al;ctx.shadowBlur=10;ctx.shadowColor=(pi===0?GA:GB)+'0.8)';ctx.fill();ctx.shadowBlur=0;ctx.globalAlpha=1;});
+        }
+      });
+      [{x:W*.1,y:H*.2,r:80,c:'rgba(168,85,247,.07)'},{x:W*.85,y:H*.15,r:100,c:'rgba(236,72,153,.06)'},{x:W*.5,y:H*.8,r:120,c:'rgba(139,92,246,.05)'},{x:W*.3,y:H*.6,r:70,c:'rgba(244,114,182,.06)'}].forEach(o=>{
+        const w=Math.sin(t*.008+o.r)*12,g=ctx.createRadialGradient(o.x,o.y+w,0,o.x,o.y+w,o.r);
+        g.addColorStop(0,o.c.replace('.0','.1'));g.addColorStop(1,'rgba(0,0,0,0)');
+        ctx.beginPath();ctx.arc(o.x,o.y+w,o.r,0,Math.PI*2);ctx.fillStyle=g;ctx.fill();
+      });
+      t++;raf=requestAnimationFrame(draw);
+    }
+    draw();
+    return()=>{cancelAnimationFrame(raf);window.removeEventListener('resize',resize);};
+  },[]);
+  return <canvas ref={ref} id="dna-canvas"/>;
+}
+
+// ── BAR CHART ──
+function BarChart({data,height=160}){
+  const max=Math.max(...data.map(d=>d.val));
+  return(
+    <div className="bar-chart" style={{height}}>
+      {data.map((d,i)=>(
+        <div className="bar-col" key={i}>
+          <div className="bar-fill" style={{height:Math.round((d.val/max)*(height-30)),background:d.color}}>
+            <div className="bar-tip">{d.label}: {d.val}{d.pct?'%':''}</div>
+          </div>
+          <div className="bar-label">{d.label}</div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// ── DONUT CHART ──
+function DonutChart({data,size=180,thickness=26,centerLabel,centerValue}){
+  const total=data.reduce((s,d)=>s+d.val,0);
+  let cumulative=0;
+  const r=(size-thickness)/2;
+  const cx=size/2,cy=size/2;
+  const circumference=2*Math.PI*r;
+  const [hovered,setHovered]=useState(null);
+  return(
+    <div style={{display:'flex',alignItems:'center',gap:24,flexWrap:'wrap'}}>
+      <div style={{position:'relative',width:size,height:size,flexShrink:0}}>
+        <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} style={{transform:'rotate(-90deg)'}}>
+          <circle cx={cx} cy={cy} r={r} fill="none" stroke="#f1f5f9" strokeWidth={thickness}/>
+          {data.map((d,i)=>{
+            const frac=d.val/total;
+            const dash=frac*circumference;
+            const offset=circumference-((cumulative/total)*circumference);
+            cumulative+=d.val;
+            return(
+              <circle key={i} cx={cx} cy={cy} r={r} fill="none" stroke={d.color}
+                strokeWidth={hovered===i?thickness+4:thickness}
+                strokeDasharray={`${dash} ${circumference-dash}`}
+                strokeDashoffset={offset}
+                style={{transition:'stroke-width .25s, stroke-dashoffset 1s ease, stroke-dasharray 1s ease',cursor:'pointer'}}
+                onMouseEnter={()=>setHovered(i)} onMouseLeave={()=>setHovered(null)}
+              />
+            );
+          })}
+        </svg>
+        <div style={{position:'absolute',inset:0,display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center'}}>
+          <div style={{fontFamily:'Space Grotesk',fontSize:24,fontWeight:700,color:'#1e293b'}}>
+            {hovered!==null?`${data[hovered].val}`:centerValue}
+          </div>
+          <div style={{fontSize:10,color:'#64748b',textAlign:'center',maxWidth:size*0.6}}>
+            {hovered!==null?data[hovered].label:centerLabel}
+          </div>
+        </div>
+      </div>
+      <div style={{display:'flex',flexDirection:'column',gap:8,flex:1,minWidth:140}}>
+        {data.map((d,i)=>(
+          <div key={i} onMouseEnter={()=>setHovered(i)} onMouseLeave={()=>setHovered(null)}
+            style={{display:'flex',alignItems:'center',gap:8,fontSize:12,cursor:'pointer',opacity:hovered!==null&&hovered!==i?.5:1,transition:'opacity .2s'}}>
+            <span style={{width:10,height:10,borderRadius:3,background:d.color,flexShrink:0}}/>
+            <span style={{color:'#475569',flex:1}}>{d.label}</span>
+            <span style={{fontWeight:700,color:'#1e293b'}}>{((d.val/total)*100).toFixed(1)}%</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ── ANIMATED COUNTER ──
+function AnimatedCounter({value,duration=1200,decimals=0,suffix='',prefix=''}){
+  const [display,setDisplay]=useState(0);
+  const target=parseFloat(value);
+  useEffect(()=>{
+    let startTime=null;
+    let raf;
+    function step(ts){
+      if(!startTime)startTime=ts;
+      const progress=Math.min((ts-startTime)/duration,1);
+      const eased=1-Math.pow(1-progress,3); // ease-out cubic
+      setDisplay(target*eased);
+      if(progress<1)raf=requestAnimationFrame(step);
+      else setDisplay(target);
+    }
+    raf=requestAnimationFrame(step);
+    return()=>cancelAnimationFrame(raf);
+  },[target,duration]);
+  return <>{prefix}{display.toFixed(decimals)}{suffix}</>;
+}
+
+// ── KPI CARD (with animated counting) ──
+function KPICard({label,value,sub,trend,trendUp,topColor}){
+  // Parse numeric value + suffix for animation (e.g. "91.3%" -> 91.3, "%")
+  const match=String(value).match(/^([\d,]+\.?\d*)(.*)$/);
+  const hasNumber=match && !isNaN(parseFloat(match[1].replace(/,/g,'')));
+  const numPart=hasNumber?parseFloat(match[1].replace(/,/g,'')):0;
+  const suffixPart=hasNumber?match[2]:'';
+  const decimals=hasNumber && match[1].includes('.')?1:0;
+  const useComma=hasNumber && parseFloat(match[1].replace(/,/g,''))>=1000;
+  return(
+    <div className="kpi-card">
+      <div className="kpi-top" style={{background:topColor||'linear-gradient(90deg,#0077b6,#3b82f6)'}}/>
+      <div className="kpi-label">{label}</div>
+      <div className="kpi-value">
+        {hasNumber?
+          <AnimatedCounter value={numPart} decimals={decimals} suffix={suffixPart} prefix={useComma?'':''}/>
+          :value}
+      </div>
+      {sub&&<div className="kpi-sub">{sub}</div>}
+      {trend&&<div className={`kpi-trend ${trendUp?'trend-up':'trend-down'}`}>{trendUp?'▲':'▼'} {trend}</div>}
+    </div>
+  );
+}
+
+// ── GAUGE CHART ──
+function GaugeChart({value,max=100,label,color='#0077b6',size=180}){
+  const [animVal,setAnimVal]=useState(0);
+  useEffect(()=>{
+    let raf,start=null;
+    const dur=1200;
+    function step(ts){
+      if(!start)start=ts;
+      const p=Math.min((ts-start)/dur,1);
+      setAnimVal(value*(1-Math.pow(1-p,3)));
+      if(p<1)raf=requestAnimationFrame(step);
+    }
+    raf=requestAnimationFrame(step);
+    return()=>cancelAnimationFrame(raf);
+  },[value]);
+  const pct=Math.min(animVal/max,1);
+  const r=size/2-16;
+  const circumference=Math.PI*r; // semi-circle
+  const cx=size/2,cy=size/2;
+  return(
+    <div style={{display:'flex',flexDirection:'column',alignItems:'center'}}>
+      <svg width={size} height={size/2+20} viewBox={`0 0 ${size} ${size/2+20}`}>
+        <path d={`M 16 ${cy} A ${r} ${r} 0 0 1 ${size-16} ${cy}`} fill="none" stroke="#f1f5f9" strokeWidth="16" strokeLinecap="round"/>
+        <path d={`M 16 ${cy} A ${r} ${r} 0 0 1 ${size-16} ${cy}`} fill="none" stroke={color} strokeWidth="16" strokeLinecap="round"
+          strokeDasharray={`${circumference*pct} ${circumference}`}/>
+      </svg>
+      <div style={{marginTop:-8,textAlign:'center'}}>
+        <div style={{fontFamily:'Space Grotesk',fontSize:26,fontWeight:700,color}}>{animVal.toFixed(1)}%</div>
+        <div style={{fontSize:11,color:'#64748b'}}>{label}</div>
+      </div>
+    </div>
+  );
+}
+
+// ── SEARCHABLE + SORTABLE TABLE ──
+function SortableSearchableTable({columns,rows,searchKeys,riskColIndex}){
+  const [query,setQuery]=useState('');
+  const [sortCol,setSortCol]=useState(null);
+  const [sortDir,setSortDir]=useState('asc');
+
+  const filtered=rows.filter(r=>{
+    if(!query)return true;
+    return searchKeys.some(idx=>String(r[idx]).toLowerCase().includes(query.toLowerCase()));
+  });
+
+  const sorted=[...filtered].sort((a,b)=>{
+    if(sortCol===null)return 0;
+    const av=a[sortCol],bv=b[sortCol];
+    const an=parseFloat(String(av).replace(/[^0-9.-]/g,''));
+    const bn=parseFloat(String(bv).replace(/[^0-9.-]/g,''));
+    let cmp;
+    if(!isNaN(an)&&!isNaN(bn)&&String(av).match(/\d/)&&String(bv).match(/\d/)){
+      cmp=an-bn;
+    } else {
+      cmp=String(av).localeCompare(String(bv));
+    }
+    return sortDir==='asc'?cmp:-cmp;
+  });
+
+  const handleSort=(idx)=>{
+    if(sortCol===idx){setSortDir(d=>d==='asc'?'desc':'asc');}
+    else{setSortCol(idx);setSortDir('asc');}
+  };
+
+  const bc=r=>r==='High'?'bg-red':r==='Medium'?'bg-amber':r==='Low'?'bg-green':'';
+
+  return(
+    <div>
+      <div style={{display:'flex',gap:10,marginBottom:12,alignItems:'center'}}>
+        <input
+          className="table-search"
+          style={{marginBottom:0,flex:1}}
+          placeholder="🔍 Search by ID, department, diagnosis..."
+          value={query}
+          onChange={e=>setQuery(e.target.value)}
+        />
+        {query&&<span style={{fontSize:11,color:'#64748b',whiteSpace:'nowrap'}}>{sorted.length} of {rows.length} results</span>}
+      </div>
+      <div style={{overflowX:'auto'}}>
+        <table className="data-table">
+          <thead>
+            <tr>
+              {columns.map((c,i)=>(
+                <th key={i} onClick={()=>handleSort(i)} style={{cursor:'pointer',userSelect:'none',whiteSpace:'nowrap'}}>
+                  {c} {sortCol===i?(sortDir==='asc'?'▲':'▼'):<span style={{opacity:.25}}>⇅</span>}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {sorted.map((r,i)=>(
+              <tr key={i}>
+                {r.map((cell,ci)=>(
+                  <td key={ci}>
+                    {ci===riskColIndex && bc(cell) ?
+                      <span className={`badge ${bc(cell)}`}>{cell}</span> : cell}
+                  </td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+        {sorted.length===0 && <div style={{textAlign:'center',padding:20,color:'#94a3b8',fontSize:12}}>No matching records found.</div>}
+      </div>
+    </div>
+  );
+}
+
+// ── PAGE 0: DASHBOARD ──
+function PageDashboard({highRisk=47,extStay=129,readRate=13.7,placement=91.3,thresh=70}){
+  const outData=[{label:'Home',val:61,color:'#0077b6'},{label:'SNF',val:22,color:'#3b82f6'},{label:'Rehab',val:8,color:'#d97706'},{label:'Readmit',val:Math.round(parseFloat(readRate)),color:'#dc2626'},{label:'Hospice',val:4,color:'#8b5cf6'},{label:'Other',val:6,color:'#64748b'}];
+  return(
+    <div>
+      <div className="section-header">
+        <div className="eyebrow">Overview</div>
+        <h2 className="sec-h2">Care Transition Dashboard</h2>
+        <p className="sec-p">Real-time placement outcomes — values update live from Controls page via React state.</p>
+      </div>
+      {/* React State Live Badge */}
+      <div style={{background:'linear-gradient(135deg,#eff6ff,#f0fdf4)',border:'1px solid #bfdbfe',borderRadius:10,padding:'10px 16px',marginBottom:16,display:'flex',alignItems:'center',gap:10}}>
+        <span style={{fontSize:14}}>⚛️</span>
+        <span style={{fontSize:12,color:'#1d4ed8',fontWeight:600}}>React State Active</span>
+        <span style={{fontSize:11,color:'#475569'}}>— Adjust sliders in Controls page to see KPIs update live here (useState + props)</span>
+        <span style={{marginLeft:'auto',background:'#dcfce7',color:'#15803d',fontSize:10,fontWeight:700,padding:'2px 10px',borderRadius:20}}>LIVE ⚡</span>
+      </div>
+      <div className="grid-4" style={{marginBottom:16}}>
+        <KPICard label="Total Patients" value="2,847" trend="4.2% this month" trendUp={true}/>
+        <KPICard label="Avg Length of Stay" value="6.4d" trend="0.8d vs last month" trendUp={false} topColor="linear-gradient(90deg,#d97706,#f59e0b)"/>
+        <KPICard label="Successful Placements" value={`${placement}%`} trend="React state driven" trendUp={true} topColor="linear-gradient(90deg,#3b82f6,#8b5cf6)"/>
+        <KPICard label="Readmission Rate" value={`${readRate}%`} trend="Updates from Controls" trendUp={false} topColor="linear-gradient(90deg,#dc2626,#f97316)"/>
+      </div>
+      <div className="grid-2">
+        <div className="card">
+          <div className="card-title">Discharge Outcomes Breakdown</div>
+          <DonutChart data={outData} centerLabel="Total Discharged" centerValue="2,847"/>
+        </div>
+        <div className="card">
+          <div className="card-title">Alert Summary <span style={{fontSize:10,color:'#3b82f6',fontWeight:600,marginLeft:8}}>⚛️ React useState</span></div>
+          <div className="alert-card" style={{background:'#fef2f2',border:'1px solid #fecaca'}}>
+            <div><div style={{fontSize:12,fontWeight:600,color:'#dc2626'}}>🔴 High Risk Patients</div><div style={{fontSize:11,color:'#64748b'}}>Score threshold: {thresh} (set in Controls)</div></div>
+            <div className="alert-num" style={{color:'#dc2626'}}>{highRisk}</div>
+          </div>
+          <div className="alert-card" style={{background:'#fffbeb',border:'1px solid #fde68a'}}>
+            <div><div style={{fontSize:12,fontWeight:600,color:'#d97706'}}>🟡 Extended Stay Alerts</div><div style={{fontSize:11,color:'#64748b'}}>Updates from stay threshold slider</div></div>
+            <div className="alert-num" style={{color:'#d97706'}}>{extStay}</div>
+          </div>
+          <div className="alert-card" style={{background:'#f0fdf4',border:'1px solid #bbf7d0'}}>
+            <div><div style={{fontSize:12,fontWeight:600,color:'#16a34a'}}>🟢 Discharged Today</div><div style={{fontSize:11,color:'#64748b'}}>Successfully placed</div></div>
+            <div className="alert-num" style={{color:'#16a34a'}}>38</div>
+          </div>
+        </div>
+      </div>
+
+      {/* EXTRA: Gauge charts row */}
+      <div className="grid-3" style={{marginTop:16}}>
+        <div className="card" style={{display:'flex',justifyContent:'center'}}>
+          <GaugeChart value={parseFloat(placement)} label="Successful Placement Rate" color="#16a34a"/>
+        </div>
+        <div className="card" style={{display:'flex',justifyContent:'center'}}>
+          <GaugeChart value={parseFloat(readRate)} max={30} label="Readmission Rate" color="#dc2626"/>
+        </div>
+        <div className="card" style={{display:'flex',justifyContent:'center'}}>
+          <GaugeChart value={96.2} label="Checklist Compliance" color="#0077b6"/>
+        </div>
+      </div>
+
+      {/* EXTRA: Department-wise breakdown table */}
+      <div className="card" style={{marginTop:16}}>
+        <div className="card-title">Department-Wise Patient Census</div>
+        <table className="data-table">
+          <thead><tr><th>Department</th><th>Active Patients</th><th>Avg LOS</th><th>Occupancy</th><th>Readmit %</th><th>Status</th></tr></thead>
+          <tbody>
+            {[['General Medicine',98,'5.2d','82%','11.4%','Normal'],['Cardiology',78,'7.1d','91%','15.8%','High'],['Surgery',67,'4.8d','74%','9.2%','Normal'],['Orthopedics',54,'6.4d','68%','12.1%','Normal'],['Neurology',41,'8.3d','85%','17.6%','High'],['ICU',32,'9.6d','96%','22.4%','Critical']].map((r,i)=>(
+              <tr key={i}>
+                <td>{r[0]}</td><td>{r[1]}</td><td>{r[2]}</td><td>{r[3]}</td><td>{r[4]}</td>
+                <td><span className={`badge ${r[5]==='Critical'?'bg-red':r[5]==='High'?'bg-amber':'bg-green'}`}>{r[5]}</span></td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      {/* EXTRA: Weekly admission trend */}
+      <div className="grid-2" style={{marginTop:16}}>
+        <div className="card">
+          <div className="card-title">Weekly Admission Pattern</div>
+          <BarChart data={[{label:'Mon',val:42,color:'#0077b6'},{label:'Tue',val:38,color:'#0077b6'},{label:'Wed',val:51,color:'#0077b6'},{label:'Thu',val:46,color:'#0077b6'},{label:'Fri',val:58,color:'#dc2626'},{label:'Sat',val:34,color:'#0077b6'},{label:'Sun',val:29,color:'#0077b6'}]} height={140}/>
+        </div>
+        <div className="card">
+          <div className="card-title">Staff Workload Distribution</div>
+          {[['Nursing Staff',78,'#0077b6'],['Physicians',62,'#3b82f6'],['Care Coordinators',45,'#8b5cf6'],['Discharge Planners',88,'#dc2626']].map((s,i)=>(
+            <div key={i} style={{marginBottom:12}}>
+              <div style={{display:'flex',justifyContent:'space-between',fontSize:12,marginBottom:4}}>
+                <span style={{fontWeight:500}}>{s[0]}</span><span style={{fontWeight:700,color:s[2]}}>{s[1]}% capacity</span>
+              </div>
+              <div style={{background:'#f1f5f9',borderRadius:20,height:7,overflow:'hidden'}}>
+                <div style={{width:`${s[1]}%`,height:'100%',background:s[2],borderRadius:20}}/>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* EXTRA: Quick insights row */}
+      <div className="grid-3" style={{marginTop:16}}>
+        <div className="card" style={{textAlign:'center',padding:'18px'}}>
+          <div style={{fontSize:24}}>🛏️</div>
+          <div style={{fontSize:20,fontWeight:700,fontFamily:'Space Grotesk',color:'#0077b6',marginTop:6}}>342</div>
+          <div style={{fontSize:11,color:'#64748b'}}>Beds Currently Occupied</div>
+        </div>
+        <div className="card" style={{textAlign:'center',padding:'18px'}}>
+          <div style={{fontSize:24}}>⏱️</div>
+          <div style={{fontSize:20,fontWeight:700,fontFamily:'Space Grotesk',color:'#d97706',marginTop:6}}>18 min</div>
+          <div style={{fontSize:11,color:'#64748b'}}>Avg Discharge Processing Time</div>
+        </div>
+        <div className="card" style={{textAlign:'center',padding:'18px'}}>
+          <div style={{fontSize:24}}>📋</div>
+          <div style={{fontSize:20,fontWeight:700,fontFamily:'Space Grotesk',color:'#16a34a',marginTop:6}}>96.2%</div>
+          <div style={{fontSize:11,color:'#64748b'}}>Discharge Checklist Compliance</div>
+        </div>
+      </div>
+
+      {/* EXTRA: Full active patient roster — Searchable + Sortable */}
+      <div className="card" style={{marginTop:16}}>
+        <div className="card-title">Active Patient Roster (Currently Admitted — 20 of 342) <span style={{fontSize:10,color:'#3b82f6',fontWeight:600,marginLeft:6}}>🔍 Live Search + Sort</span></div>
+        <SortableSearchableTable
+          columns={['Patient ID','Age','Gender','Dept','Diagnosis','Day of Stay','Risk','Attending']}
+          searchKeys={[0,3,4,7]}
+          riskColIndex={6}
+          rows={[['PT-00301','58','M','Cardiology','Hypertension','Day 3','Low','Dr. Sharma'],
+              ['PT-00298','71','F','ICU','Sepsis','Day 9','High','Dr. Singh'],
+              ['PT-00295','45','M','General Med','Pneumonia','Day 2','Low','Dr. Reddy'],
+              ['PT-00292','67','F','Orthopedics','Hip Fracture','Day 5','Medium','Dr. Sharma'],
+              ['PT-00289','52','M','Surgery','Appendicitis','Day 1','Low','Dr. Iyer'],
+              ['PT-00286','79','F','Neurology','Stroke','Day 11','High','Dr. Singh'],
+              ['PT-00283','61','M','Cardiology','CHF','Day 6','Medium','Dr. Sharma'],
+              ['PT-00280','38','F','General Med','Appendicitis','Day 2','Low','Dr. Reddy'],
+              ['PT-00277','84','M','ICU','Multi-organ failure','Day 14','High','Dr. Singh'],
+              ['PT-00274','55','F','Orthopedics','Hip Replacement','Day 4','Medium','Dr. Sharma'],
+              ['PT-00271','49','M','Surgery','Hernia repair','Day 1','Low','Dr. Iyer'],
+              ['PT-00268','73','F','Neurology','Seizure disorder','Day 8','Medium','Dr. Singh'],
+              ['PT-00265','62','M','General Med','Hypertension','Day 3','Low','Dr. Reddy'],
+              ['PT-00262','77','F','Cardiology','CHF','Day 10','High','Dr. Sharma'],
+              ['PT-00259','41','M','Orthopedics','Sports injury','Day 2','Low','Dr. Sharma'],
+              ['PT-00256','68','F','ICU','Respiratory failure','Day 7','High','Dr. Singh'],
+              ['PT-00253','56','M','Surgery','Gallbladder removal','Day 3','Low','Dr. Iyer'],
+              ['PT-00250','82','F','Neurology','Stroke recovery','Day 13','Medium','Dr. Singh'],
+              ['PT-00247','47','M','General Med','Pneumonia','Day 4','Medium','Dr. Reddy'],
+              ['PT-00244','64','F','Cardiology','Arrhythmia','Day 5','Medium','Dr. Sharma']
+          ]}
+        />
+      </div>
+
+      {/* EXTRA: Monthly comparison year-over-year */}
+      <div className="card" style={{marginTop:16}}>
+        <div className="card-title">Year-over-Year Department Comparison</div>
+        <table className="data-table">
+          <thead><tr><th>Department</th><th>2023 Patients</th><th>2024 Patients</th><th>Change</th><th>2023 Avg LOS</th><th>2024 Avg LOS</th><th>LOS Change</th></tr></thead>
+          <tbody>
+            {[['General Medicine',892,981,'+10.0%','5.6d','5.2d','-0.4d'],
+              ['Cardiology',712,748,'+5.1%','7.4d','7.1d','-0.3d'],
+              ['Surgery',598,634,'+6.0%','5.1d','4.8d','-0.3d'],
+              ['Orthopedics',487,524,'+7.6%','6.8d','6.4d','-0.4d'],
+              ['Neurology',356,398,'+11.8%','8.9d','8.3d','-0.6d'],
+              ['ICU',278,312,'+12.2%','10.1d','9.6d','-0.5d']
+            ].map((r,i)=>(
+              <tr key={i}>
+                <td>{r[0]}</td><td>{r[1]}</td><td>{r[2]}</td>
+                <td style={{color:'#16a34a',fontWeight:600}}>{r[3]}</td>
+                <td>{r[4]}</td><td>{r[5]}</td>
+                <td style={{color:'#16a34a',fontWeight:600}}>{r[6]}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+// ── PAGE 1: CONTROLS ──
+function PageControls({thresh,setThresh,stayAlert,setStayAlert,readWin,setReadWin,onApply}){
+  const [toast,setToast]=useState(false);
+  const apply=()=>{setToast(true);setTimeout(()=>{setToast(false);onApply();},1200);};
+  return(
+    <div>
+      <div className="section-header">
+        <div className="eyebrow">Configuration</div>
+        <h2 className="sec-h2">Dashboard Controls</h2>
+        <p className="sec-p">Adjust sliders — Dashboard KPIs update live via <strong style={{color:'#1d4ed8'}}>React useState</strong> shared state.</p>
+      </div>
+      <div className="grid-2">
+        <div className="card">
+          <div className="card-title">📅 Date Range</div>
+          <div className="control-group"><div className="control-label">From Date</div><input className="ctrl-input" type="date" defaultValue="2024-01-01"/></div>
+          <div className="control-group"><div className="control-label">To Date</div><input className="ctrl-input" type="date" defaultValue="2024-12-31"/></div>
+          <div className="control-group">
+            <div className="control-label">Quick Select</div>
+            <div style={{display:'flex',gap:8,flexWrap:'wrap'}}>
+              {['30d','90d','6mo','Year'].map(l=>(
+                <button key={l} style={{background:'#eff6ff',border:'1px solid #bfdbfe',color:'#1d4ed8',borderRadius:6,padding:'6px 12px',fontSize:11,fontWeight:600,cursor:'pointer'}}>Last {l}</button>
+              ))}
+            </div>
+          </div>
+        </div>
+        <div className="card">
+          <div className="card-title">🚨 Alert Thresholds <span style={{fontSize:10,color:'#7c3aed',background:'#f3e8ff',padding:'2px 8px',borderRadius:20,marginLeft:6}}>⚛️ useState</span></div>
+          <div className="control-group">
+            <div className="control-label">High-Risk Score Threshold → affects Dashboard High Risk count</div>
+            <div className="slider-wrap">
+              <input type="range" min="0" max="100" value={thresh} onChange={e=>setThresh(Number(e.target.value))}/>
+              <span className="slider-val">{thresh}</span>
+            </div>
+          </div>
+          <div className="control-group">
+            <div className="control-label">Extended Stay Alert (days) → affects Extended Stay alerts</div>
+            <div className="slider-wrap">
+              <input type="range" min="3" max="30" value={stayAlert} onChange={e=>setStayAlert(Number(e.target.value))}/>
+              <span className="slider-val">{stayAlert}d</span>
+            </div>
+          </div>
+          <div className="control-group">
+            <div className="control-label">Readmission Window (days) → affects Readmission Rate %</div>
+            <div className="slider-wrap">
+              <input type="range" min="7" max="90" value={readWin} onChange={e=>setReadWin(Number(e.target.value))}/>
+              <span className="slider-val">{readWin}d</span>
+            </div>
+          </div>
+          {/* Live preview */}
+          <div style={{background:'#f8fafc',border:'1px solid #e2e8f0',borderRadius:10,padding:'12px 14px',marginTop:8}}>
+            <div style={{fontSize:11,fontWeight:700,color:'#475569',marginBottom:8,textTransform:'uppercase',letterSpacing:'.8px'}}>⚡ Live Preview (React State)</div>
+            <div style={{display:'flex',gap:16}}>
+              <div><div style={{fontSize:10,color:'#64748b'}}>High Risk</div><div style={{fontSize:20,fontWeight:700,color:'#dc2626'}}>{Math.round(47*(thresh/70))}</div></div>
+              <div><div style={{fontSize:10,color:'#64748b'}}>Ext. Stay</div><div style={{fontSize:20,fontWeight:700,color:'#d97706'}}>{Math.round(129*(10/stayAlert))}</div></div>
+              <div><div style={{fontSize:10,color:'#64748b'}}>Readmit %</div><div style={{fontSize:20,fontWeight:700,color:'#0077b6'}}>{(13.7*(readWin/30)).toFixed(1)}%</div></div>
+            </div>
+          </div>
+        </div>
+        <div className="card span-2">
+          <div className="card-title">🖥️ Display Options</div>
+          <div className="toggle-group">
+            {[['Show Animations','Chart entrance animations and transitions',true],['Dark Mode Charts','Dark background for all visualizations',false],['Show Risk Badges','Color-coded risk indicators on patient table',true],['Auto-refresh Data','Refresh metrics every 5 minutes',false]].map(([lbl,desc,def])=>(
+              <div className="toggle-row" key={lbl}>
+                <div><div className="toggle-label">{lbl}</div><div className="toggle-desc">{desc}</div></div>
+                <label className="toggle"><input type="checkbox" defaultChecked={def}/><span className="toggle-track"></span></label>
+              </div>
+            ))}
+          </div>
+          <button className="apply-btn" onClick={apply}>⚛️ Apply & View Dashboard →</button>
+          {toast&&<div className="toast">✅ State updated! Navigating to Dashboard...</div>}
+        </div>
+      </div>
+
+      {/* EXTRA: Notification preferences */}
+      <div className="card" style={{marginTop:16}}>
+        <div className="card-title">🔔 Notification Preferences</div>
+        <div className="toggle-group">
+          {[['Email Alerts','Send daily summary emails to administrators',true],['SMS for Critical Cases','Text alerts for ICU and critical risk patients',true],['Slack Integration','Push alerts to #care-coordination channel',false],['Weekly PDF Reports','Auto-generate and email weekly analytics report',true]].map(([lbl,desc,def])=>(
+            <div className="toggle-row" key={lbl}>
+              <div><div className="toggle-label">{lbl}</div><div className="toggle-desc">{desc}</div></div>
+              <label className="toggle"><input type="checkbox" defaultChecked={def}/><span className="toggle-track"></span></label>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* EXTRA: User access & roles table */}
+      <div className="card" style={{marginTop:16}}>
+        <div className="card-title">👥 User Access & Permissions</div>
+        <table className="data-table">
+          <thead><tr><th>User</th><th>Role</th><th>Department</th><th>Access Level</th><th>Last Active</th></tr></thead>
+          <tbody>
+            {[['Admin (You)','System Admin','All Departments','Full Access','Now'],['Dr. R. Sharma','Physician','Cardiology','View + Edit','2 hrs ago'],['N. Patel','Discharge Planner','General Med','View + Edit','15 min ago'],['S. Kumar','Care Coordinator','ICU','View Only','1 day ago'],['Dr. A. Singh','Department Head','Neurology','Full Access','3 hrs ago']].map((r,i)=>(
+              <tr key={i}><td>{r[0]}</td><td>{r[1]}</td><td>{r[2]}</td><td><span className={`badge ${r[3]==='Full Access'?'bg-green':r[3]==='View Only'?'bg-amber':'bg-blue'}`}>{r[3]}</span></td><td>{r[4]}</td></tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      {/* EXTRA: System status */}
+      <div className="grid-3" style={{marginTop:16}}>
+        <div className="card" style={{textAlign:'center',padding:18}}>
+          <div style={{fontSize:22}}>🟢</div>
+          <div style={{fontSize:14,fontWeight:700,color:'#16a34a',marginTop:6}}>System Online</div>
+          <div style={{fontSize:11,color:'#64748b'}}>99.8% uptime this month</div>
+        </div>
+        <div className="card" style={{textAlign:'center',padding:18}}>
+          <div style={{fontSize:22}}>💾</div>
+          <div style={{fontSize:14,fontWeight:700,color:'#0077b6',marginTop:6}}>Last Sync: 2 min ago</div>
+          <div style={{fontSize:11,color:'#64748b'}}>Auto-sync every 5 minutes</div>
+        </div>
+        <div className="card" style={{textAlign:'center',padding:18}}>
+          <div style={{fontSize:22}}>🔒</div>
+          <div style={{fontSize:14,fontWeight:700,color:'#7c3aed',marginTop:6}}>Data Encrypted</div>
+          <div style={{fontSize:11,color:'#64748b'}}>AES-256 at rest & in transit</div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── PAGE 2: DISCHARGE ──
+function PageDischarge(){
+  const deptData=[{label:'Cardio',val:78,color:'#dc2626'},{label:'Ortho',val:54,color:'#d97706'},{label:'ICU',val:32,color:'#8b5cf6'},{label:'Gen Med',val:98,color:'#0077b6'},{label:'Neuro',val:41,color:'#3b82f6'},{label:'Surgery',val:67,color:'#0891b2'}];
+  const discData=[{label:'Home',pct:61.2,color:'#0077b6'},{label:'Skilled Nursing Facility',pct:22.4,color:'#3b82f6'},{label:'Readmitted',pct:13.7,color:'#dc2626'},{label:'Rehabilitation',pct:8.1,color:'#d97706'},{label:'Hospice / Palliative',pct:4.6,color:'#8b5cf6'}];
+  const recent=[['PT-00142','Cardiology','5d','Home','Low','2024-12-18'],['PT-00139','Orthopedics','8d','SNF','Medium','2024-12-18'],['PT-00136','ICU','14d','Readmit','High','2024-12-17'],['PT-00133','General Med','3d','Home','Low','2024-12-17'],['PT-00130','Neurology','11d','Rehab','Medium','2024-12-16']];
+  const bc=r=>r==='High'?'bg-red':r==='Medium'?'bg-amber':'bg-green';
+  return(
+    <div className="page-anim">
+      <div className="section-header">
+        <div className="eyebrow">Discharge</div>
+        <h2 className="sec-h2">Discharge Details</h2>
+        <p className="sec-p">Breakdown of patient discharge outcomes, destination types, and transition metrics.</p>
+      </div>
+      <div className="grid-3" style={{marginBottom:16}}>
+        <KPICard label="Home Discharge" value="61.2%" sub="1,742 patients"/>
+        <KPICard label="Skilled Nursing" value="22.4%" sub="638 patients" topColor="linear-gradient(90deg,#d97706,#f59e0b)"/>
+        <KPICard label="Readmitted" value="13.7%" sub="390 patients" topColor="linear-gradient(90deg,#dc2626,#f97316)"/>
+      </div>
+      <div className="grid-2">
+        <div className="card">
+          <div className="card-title">Discharge Destination Distribution</div>
+          <DonutChart data={discData.map(d=>({label:d.label,val:d.pct,color:d.color}))} centerLabel="Total" centerValue="100%" size={170} thickness={24}/>
+        </div>
+        <div className="card">
+          <div className="card-title">Discharge by Department</div>
+          <BarChart data={deptData} height={200}/>
+        </div>
+        <div className="card span-2">
+          <div className="card-title">Recent Discharges</div>
+          <table className="data-table">
+            <thead><tr><th>Patient ID</th><th>Dept</th><th>LOS</th><th>Destination</th><th>Risk</th><th>Date</th></tr></thead>
+            <tbody>{recent.map((r,i)=><tr key={i}><td>{r[0]}</td><td>{r[1]}</td><td>{r[2]}</td><td>{r[3]}</td><td><span className={`badge ${bc(r[4])}`}>{r[4]}</span></td><td>{r[5]}</td></tr>)}</tbody>
+          </table>
+        </div>
+      </div>
+
+      {/* EXTRA: Extended discharge log */}
+      <div className="card" style={{marginTop:16}}>
+        <div className="card-title">Full Discharge Log (Last 12 Records)</div>
+        <table className="data-table">
+          <thead><tr><th>Patient ID</th><th>Age</th><th>Dept</th><th>Diagnosis</th><th>LOS</th><th>Destination</th><th>Risk</th><th>Date</th></tr></thead>
+          <tbody>
+            {[['PT-00128','67','Surgery','Hip Replacement','6d','Rehab','Medium','2024-12-16'],
+              ['PT-00125','54','General Med','Pneumonia','4d','Home','Low','2024-12-15'],
+              ['PT-00122','81','ICU','Sepsis','16d','Readmit','High','2024-12-15'],
+              ['PT-00119','45','Cardiology','Hypertension','3d','Home','Low','2024-12-14'],
+              ['PT-00116','72','Orthopedics','Fracture','9d','SNF','Medium','2024-12-14'],
+              ['PT-00113','38','General Med','Appendicitis','2d','Home','Low','2024-12-13'],
+              ['PT-00110','69','Neurology','Stroke','13d','SNF','High','2024-12-13'],
+              ['PT-00107','58','Cardiology','CHF','10d','Home','Medium','2024-12-12'],
+              ['PT-00104','77','ICU','CHF','15d','Readmit','High','2024-12-12'],
+              ['PT-00101','49','Surgery','Appendicitis','3d','Home','Low','2024-12-11'],
+              ['PT-00098','63','Orthopedics','Hip Replacement','7d','Rehab','Medium','2024-12-11'],
+              ['PT-00095','55','General Med','Hypertension','4d','Home','Low','2024-12-10']
+            ].map((r,i)=>(
+              <tr key={i}><td>{r[0]}</td><td>{r[1]}</td><td>{r[2]}</td><td>{r[3]}</td><td>{r[4]}</td><td>{r[5]}</td><td><span className={`badge ${bc(r[6])}`}>{r[6]}</span></td><td>{r[7]}</td></tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      {/* EXTRA: Discharge time analysis */}
+      <div className="grid-2" style={{marginTop:16}}>
+        <div className="card">
+          <div className="card-title">Discharge Time of Day Distribution</div>
+          <BarChart data={[{label:'6-9AM',val:18,color:'#0077b6'},{label:'9-12PM',val:42,color:'#0077b6'},{label:'12-3PM',val:56,color:'#0077b6'},{label:'3-6PM',val:38,color:'#0077b6'},{label:'6-9PM',val:22,color:'#0077b6'},{label:'Night',val:8,color:'#0077b6'}]} height={140}/>
+        </div>
+        <div className="card">
+          <div className="card-title">Discharge Delay Reasons</div>
+          {[['Pending insurance approval',34,'#dc2626'],['Family/transport coordination',28,'#d97706'],['Medication reconciliation',19,'#3b82f6'],['SNF bed availability',12,'#8b5cf6'],['Other administrative',7,'#64748b']].map((d,i)=>(
+            <div key={i} style={{marginBottom:10}}>
+              <div style={{display:'flex',justifyContent:'space-between',fontSize:12,marginBottom:4}}>
+                <span style={{fontWeight:500}}>{d[0]}</span><span style={{fontWeight:700,color:d[2]}}>{d[1]}%</span>
+              </div>
+              <div style={{background:'#f1f5f9',borderRadius:20,height:7,overflow:'hidden'}}>
+                <div style={{width:`${d[1]}%`,height:'100%',background:d[2],borderRadius:20}}/>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* EXTRA: Summary stats row */}
+      <div className="grid-4" style={{marginTop:16}}>
+        <div className="card" style={{textAlign:'center',padding:16}}><div style={{fontSize:20}}>📅</div><div style={{fontSize:18,fontWeight:700,fontFamily:'Space Grotesk',color:'#0077b6'}}>4.2</div><div style={{fontSize:10,color:'#64748b'}}>Avg Days to Plan</div></div>
+        <div className="card" style={{textAlign:'center',padding:16}}><div style={{fontSize:20}}>✅</div><div style={{fontSize:18,fontWeight:700,fontFamily:'Space Grotesk',color:'#16a34a'}}>87%</div><div style={{fontSize:10,color:'#64748b'}}>On-Time Discharges</div></div>
+        <div className="card" style={{textAlign:'center',padding:16}}><div style={{fontSize:20}}>📞</div><div style={{fontSize:18,fontWeight:700,fontFamily:'Space Grotesk',color:'#d97706'}}>72%</div><div style={{fontSize:10,color:'#64748b'}}>Follow-up Calls Made</div></div>
+        <div className="card" style={{textAlign:'center',padding:16}}><div style={{fontSize:20}}>💊</div><div style={{fontSize:18,fontWeight:700,fontFamily:'Space Grotesk',color:'#7c3aed'}}>94%</div><div style={{fontSize:10,color:'#64748b'}}>Medication Rec. Complete</div></div>
+      </div>
+
+      {/* EXTRA: SNF & Rehab partner performance */}
+      <div className="card" style={{marginTop:16}}>
+        <div className="card-title">Partner Facility Performance (SNF / Rehab)</div>
+        <table className="data-table">
+          <thead><tr><th>Facility Name</th><th>Type</th><th>Patients Sent</th><th>Avg Stay There</th><th>30-Day Readmit %</th><th>Rating</th></tr></thead>
+          <tbody>
+            {[['Sunrise Care Center','SNF',142,'18d','11.2%','★★★★☆'],
+              ['Meridian Rehab Institute','Rehab',98,'14d','8.4%','★★★★★'],
+              ['Greenfield Nursing Home','SNF',87,'22d','19.6%','★★★☆☆'],
+              ['Harmony Recovery Center','Rehab',76,'12d','7.1%','★★★★★'],
+              ['Riverside SNF','SNF',64,'20d','15.8%','★★★☆☆'],
+              ['Oakwood Transitional Care','SNF',51,'16d','10.9%','★★★★☆']
+            ].map((r,i)=>(
+              <tr key={i}><td>{r[0]}</td><td>{r[1]}</td><td>{r[2]}</td><td>{r[3]}</td><td>{r[4]}</td><td style={{color:'#d97706'}}>{r[5]}</td></tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      {/* EXTRA: Readmission case detail log */}
+      <div className="card" style={{marginTop:16}}>
+        <div className="card-title">Readmission Case Detail Log</div>
+        <table className="data-table">
+          <thead><tr><th>Patient ID</th><th>First Discharge</th><th>Readmit Date</th><th>Days Gap</th><th>Original Dept</th><th>Reason for Return</th></tr></thead>
+          <tbody>
+            {[['PT-00088','2024-11-28','2024-12-04','6 days','ICU','Wound infection'],
+              ['PT-00076','2024-11-22','2024-12-01','9 days','Cardiology','CHF exacerbation'],
+              ['PT-00064','2024-11-15','2024-11-26','11 days','Neurology','Seizure recurrence'],
+              ['PT-00052','2024-11-09','2024-11-19','10 days','General Med','Pneumonia relapse'],
+              ['PT-00041','2024-11-02','2024-11-08','6 days','ICU','Sepsis recurrence'],
+              ['PT-00033','2024-10-26','2024-11-05','10 days','Cardiology','Medication non-adherence']
+            ].map((r,i)=>(
+              <tr key={i}><td>{r[0]}</td><td>{r[1]}</td><td>{r[2]}</td><td>{r[3]}</td><td>{r[4]}</td><td>{r[5]}</td></tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+// ── PAGE 3: VOLUME ──
+function PageVolume(){
+  const svgRef=useRef();
+  const adm=[210,198,312,245,268,290,276,301,258,284,267,238];
+  const dis=[198,185,295,230,251,278,261,287,244,270,251,222];
+  const re=[28,24,38,31,34,36,33,39,31,35,32,28];
+  const W=800,H=200,pad=40,maxV=Math.max(...adm);
+  const pts=arr=>arr.map((v,i)=>`${pad+i*(W-2*pad)/11},${H-pad-(v/maxV)*(H-2*pad)}`).join(' ');
+  return(
+    <div className="page-anim">
+      <div className="section-header">
+        <div className="eyebrow">Volume Trends</div>
+        <h2 className="sec-h2">Patient Volume Over Time</h2>
+        <p className="sec-p">Monthly admission, discharge, and readmission volumes across the full year.</p>
+      </div>
+      <div className="card" style={{marginBottom:16}}>
+        <div className="card-title">Monthly Volume Trends (2024)</div>
+        <div className="line-wrap">
+          <svg ref={svgRef} viewBox="0 0 800 200">
+            {['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'].map((m,i)=>(
+              <text key={m} x={pad+i*(W-2*pad)/11} y={H-8} textAnchor="middle" fill="#64748b" fontSize="10" fontFamily="Inter">{m}</text>
+            ))}
+            <polyline points={pts(adm)} fill="none" stroke="#0077b6" strokeWidth="2.5" strokeLinejoin="round"/>
+            <polyline points={pts(dis)} fill="none" stroke="#3b82f6" strokeWidth="2" strokeLinejoin="round"/>
+            <polyline points={pts(re)} fill="none" stroke="#dc2626" strokeWidth="1.5" strokeDasharray="4,3" strokeLinejoin="round"/>
+            {adm.map((v,i)=><circle key={i} cx={pad+i*(W-2*pad)/11} cy={H-pad-(v/maxV)*(H-2*pad)} r="3.5" fill="#0077b6"/>)}
+          </svg>
+        </div>
+        <div style={{display:'flex',gap:20,marginTop:12,justifyContent:'center'}}>
+          {[['#0077b6','Admissions'],['#3b82f6','Discharges'],['#dc2626','Readmissions']].map(([c,l])=>(
+            <div key={l} style={{display:'flex',alignItems:'center',gap:6,fontSize:11,color:'#475569',fontWeight:500}}>
+              <div style={{width:24,height:3,background:c,borderRadius:2}}/>{l}
+            </div>
+          ))}
+        </div>
+      </div>
+      <div className="grid-3">
+        <KPICard label="Peak Month" value="March" sub="312 admissions"/>
+        <KPICard label="Avg Monthly Vol" value="237" sub="admissions/month" topColor="linear-gradient(90deg,#d97706,#f59e0b)"/>
+        <KPICard label="YoY Growth" value="+8.3%" sub="vs 2023" topColor="linear-gradient(90deg,#3b82f6,#8b5cf6)"/>
+      </div>
+
+      {/* EXTRA: Monthly breakdown table */}
+      <div className="card" style={{marginTop:16}}>
+        <div className="card-title">Monthly Volume Breakdown (Full Year)</div>
+        <table className="data-table">
+          <thead><tr><th>Month</th><th>Admissions</th><th>Discharges</th><th>Readmissions</th><th>Net Change</th><th>Readmit %</th></tr></thead>
+          <tbody>
+            {['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'].map((m,i)=>{
+              const net=adm[i]-dis[i];
+              const pct=((re[i]/dis[i])*100).toFixed(1);
+              return(
+                <tr key={m}>
+                  <td>{m} 2024</td><td>{adm[i]}</td><td>{dis[i]}</td><td>{re[i]}</td>
+                  <td style={{color:net>=0?'#16a34a':'#dc2626',fontWeight:600}}>{net>=0?'+':''}{net}</td>
+                  <td>{pct}%</td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+
+      {/* EXTRA: Quarterly summary */}
+      <div className="grid-4" style={{marginTop:16}}>
+        <div className="card" style={{textAlign:'center',padding:18}}>
+          <div style={{fontSize:11,color:'#64748b',fontWeight:700,textTransform:'uppercase'}}>Q1 2024</div>
+          <div style={{fontSize:24,fontWeight:700,fontFamily:'Space Grotesk',color:'#0077b6',marginTop:6}}>720</div>
+          <div style={{fontSize:11,color:'#64748b'}}>Total Admissions</div>
+        </div>
+        <div className="card" style={{textAlign:'center',padding:18}}>
+          <div style={{fontSize:11,color:'#64748b',fontWeight:700,textTransform:'uppercase'}}>Q2 2024</div>
+          <div style={{fontSize:24,fontWeight:700,fontFamily:'Space Grotesk',color:'#3b82f6',marginTop:6}}>803</div>
+          <div style={{fontSize:11,color:'#64748b'}}>Total Admissions</div>
+        </div>
+        <div className="card" style={{textAlign:'center',padding:18}}>
+          <div style={{fontSize:11,color:'#64748b',fontWeight:700,textTransform:'uppercase'}}>Q3 2024</div>
+          <div style={{fontSize:24,fontWeight:700,fontFamily:'Space Grotesk',color:'#d97706',marginTop:6}}>835</div>
+          <div style={{fontSize:11,color:'#64748b'}}>Total Admissions</div>
+        </div>
+        <div className="card" style={{textAlign:'center',padding:18}}>
+          <div style={{fontSize:11,color:'#64748b',fontWeight:700,textTransform:'uppercase'}}>Q4 2024</div>
+          <div style={{fontSize:24,fontWeight:700,fontFamily:'Space Grotesk',color:'#7c3aed',marginTop:6}}>789</div>
+          <div style={{fontSize:11,color:'#64748b'}}>Total Admissions</div>
+        </div>
+      </div>
+
+      {/* EXTRA: Admission source breakdown */}
+      <div className="grid-2" style={{marginTop:16}}>
+        <div className="card">
+          <div className="card-title">Admission Source Trend</div>
+          <BarChart data={[{label:'ER',val:1124,color:'#dc2626'},{label:'Elective',val:856,color:'#d97706'},{label:'Referral',val:621,color:'#3b82f6'},{label:'Transfer',val:246,color:'#8b5cf6'}]} height={150}/>
+        </div>
+        <div className="card">
+          <div className="card-title">Seasonal Pattern Notes</div>
+          <ul className="rec-list">
+            <li className="rec-item"><span style={{fontSize:16}}>❄️</span><div className="rec-text"><strong>Winter Peak (Dec-Feb)</strong> — Respiratory illness admissions rise 22% during cold months.</div></li>
+            <li className="rec-item"><span style={{fontSize:16}}>🌸</span><div className="rec-text"><strong>Spring Surge (Mar)</strong> — Highest admission month, often linked to seasonal allergy complications.</div></li>
+            <li className="rec-item"><span style={{fontSize:16}}>☀️</span><div className="rec-text"><strong>Summer Dip (Jun-Jul)</strong> — Elective procedures and minor admissions decrease slightly.</div></li>
+          </ul>
+        </div>
+      </div>
+
+      {/* EXTRA: Daily admission log sample */}
+      <div className="card" style={{marginTop:16}}>
+        <div className="card-title">Daily Admission Log — December 2024 (Last 14 Days)</div>
+        <table className="data-table">
+          <thead><tr><th>Date</th><th>Admissions</th><th>Discharges</th><th>Net Beds</th><th>ER Admissions</th><th>Elective</th></tr></thead>
+          <tbody>
+            {[['Dec 18',9,11,'-2',6,3],['Dec 17',7,8,'-1',5,2],['Dec 16',11,9,'+2',7,4],['Dec 15',8,10,'-2',4,4],
+              ['Dec 14',6,7,'-1',3,3],['Dec 13',10,8,'+2',6,4],['Dec 12',12,10,'+2',8,4],['Dec 11',9,11,'-2',5,4],
+              ['Dec 10',7,6,'+1',4,3],['Dec 9',8,9,'-1',5,3],['Dec 8',11,10,'+1',7,4],['Dec 7',9,8,'+1',6,3],
+              ['Dec 6',10,12,'-2',6,4],['Dec 5',8,7,'+1',5,3]
+            ].map((r,i)=>(
+              <tr key={i}><td>{r[0]}</td><td>{r[1]}</td><td>{r[2]}</td>
+                <td style={{color:r[3].startsWith('+')?'#16a34a':'#dc2626',fontWeight:600}}>{r[3]}</td>
+                <td>{r[4]}</td><td>{r[5]}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      {/* EXTRA: Department volume comparison */}
+      <div className="card" style={{marginTop:16}}>
+        <div className="card-title">Monthly Department Volume Matrix</div>
+        <table className="data-table">
+          <thead><tr><th>Department</th><th>Jan</th><th>Apr</th><th>Jul</th><th>Oct</th><th>Dec</th><th>Trend</th></tr></thead>
+          <tbody>
+            {[['General Med',76,82,79,88,91,'↑'],['Cardiology',58,64,61,68,71,'↑'],['Surgery',49,52,55,58,61,'↑'],
+              ['Orthopedics',38,42,40,45,48,'↑'],['Neurology',31,33,32,36,38,'↑'],['ICU',24,27,26,29,31,'↑']
+            ].map((r,i)=>(
+              <tr key={i}><td>{r[0]}</td><td>{r[1]}</td><td>{r[2]}</td><td>{r[3]}</td><td>{r[4]}</td><td>{r[5]}</td>
+                <td style={{color:'#16a34a',fontWeight:700}}>{r[6]}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+function PageSankey(){
+  const C=['#0077b6','#3b82f6','#d97706','#dc2626','#8b5cf6','#0891b2'];
+  const nodes=[
+    {x:20,y:20,h:80,label:'Emergency',val:'1,124',c:C[3]},
+    {x:20,y:120,h:60,label:'Elective',val:'856',c:C[2]},
+    {x:20,y:200,h:50,label:'Referral',val:'621',c:C[1]},
+    {x:20,y:270,h:40,label:'Transfer',val:'246',c:C[5]},
+    {x:300,y:10,h:70,label:'ICU',val:'412',c:C[3]},
+    {x:300,y:98,h:80,label:'General Med',val:'824',c:C[0]},
+    {x:300,y:195,h:55,label:'Cardiology',val:'491',c:C[3]},
+    {x:300,y:266,h:45,label:'Orthopedics',val:'382',c:C[2]},
+    {x:300,y:327,h:35,label:'Neurology',val:'214',c:C[1]},
+    {x:580,y:15,h:110,label:'Home',val:'1,742',c:C[0]},
+    {x:580,y:140,h:50,label:'SNF',val:'638',c:C[1]},
+    {x:580,y:205,h:35,label:'Rehab',val:'230',c:C[2]},
+    {x:580,y:255,h:30,label:'Readmit',val:'390',c:C[3]},
+    {x:580,y:300,h:20,label:'Hospice',val:'131',c:C[5]},
+  ];
+  const links=[[0,4,60],[0,5,40],[0,6,30],[1,5,50],[1,7,40],[2,5,35],[2,8,25],[3,4,20],[3,5,15],[4,12,25],[4,10,35],[5,9,60],[5,10,20],[6,9,25],[6,11,20],[6,12,15],[7,9,30],[7,11,20],[8,9,18],[8,13,12]];
+  const NW=18;
+  return(
+    <div className="page-anim">
+      <div className="section-header">
+        <div className="eyebrow">Patient Flow</div>
+        <h2 className="sec-h2">Sankey Flow Diagram</h2>
+        <p className="sec-p">Visual representation of patient pathways — from admission through care units to discharge destinations.</p>
+      </div>
+      <div className="card" style={{marginBottom:16}}>
+        <div className="card-title">Patient Journey Flow</div>
+        <svg className="sankey-svg" viewBox="0 0 860 340" style={{marginTop:12}}>
+          {links.map(([s,d,w],i)=>{
+            const sn=nodes[s],dn=nodes[d];
+            const x1=sn.x+NW,y1=sn.y+sn.h/2,x2=dn.x,y2=dn.y+dn.h/2,mx=(x1+x2)/2;
+            return <path key={i} d={`M${x1},${y1} C${mx},${y1} ${mx},${y2} ${x2},${y2}`} className="sankey-link" stroke={sn.c} strokeWidth={Math.max(2,w*.7)}/>;
+          })}
+          {nodes.map((n,i)=>{
+            const tx=n.x<200?n.x+NW+6:n.x>500?n.x-6:n.x+NW+6;
+            const anc=n.x>500?'end':'start';
+            return(
+              <g key={i}>
+                <rect x={n.x} y={n.y} width={NW} height={n.h} fill={n.c} rx="4"/>
+                <text x={tx} y={n.y+n.h/2-5} className="sankey-label" textAnchor={anc}>{n.label}</text>
+                <text x={tx} y={n.y+n.h/2+9} className="sankey-val" textAnchor={anc}>{n.val}</text>
+              </g>
+            );
+          })}
+        </svg>
+      </div>
+      <div className="grid-3">
+        <div className="card"><div className="card-title">Largest Flow</div><div style={{fontSize:13,color:'#1e293b',fontWeight:500}}>Emergency → General Med</div><div style={{fontSize:11,color:'#475569',marginTop:4}}>624 patients (21.9%)</div></div>
+        <div className="card"><div className="card-title">Most Efficient Path</div><div style={{fontSize:13,color:'#1e293b',fontWeight:500}}>Elective → Surgery → Home</div><div style={{fontSize:11,color:'#475569',marginTop:4}}>Avg 4.2d LOS</div></div>
+        <div className="card"><div className="card-title">Highest Readmit Path</div><div style={{fontSize:13,color:'#1e293b',fontWeight:500}}>ICU → SNF</div><div style={{fontSize:11,color:'#475569',marginTop:4}}>28.4% readmission rate</div></div>
+      </div>
+
+      {/* EXTRA: All flow paths table */}
+      <div className="card" style={{marginTop:16}}>
+        <div className="card-title">Complete Patient Pathway Table</div>
+        <table className="data-table">
+          <thead><tr><th>Admission Source</th><th>Department</th><th>Discharge Destination</th><th>Patient Count</th><th>Avg LOS</th><th>% of Total</th></tr></thead>
+          <tbody>
+            {[['Emergency','ICU','Readmit',125,'14.2d','4.4%'],['Emergency','General Med','Home',624,'4.8d','21.9%'],['Emergency','Cardiology','Home',310,'6.1d','10.9%'],['Elective','Surgery','Home',392,'4.2d','13.8%'],['Elective','Orthopedics','Rehab',280,'7.5d','9.8%'],['Referral','General Med','Home',218,'5.3d','7.7%'],['Referral','Neurology','SNF',156,'9.1d','5.5%'],['Transfer','ICU','Hospice',131,'11.8d','4.6%']].map((r,i)=>(
+              <tr key={i}><td>{r[0]}</td><td>{r[1]}</td><td>{r[2]}</td><td>{r[3]}</td><td>{r[4]}</td><td>{r[5]}</td></tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      {/* EXTRA: Flow efficiency cards */}
+      <div className="grid-3" style={{marginTop:16}}>
+        <div className="card">
+          <div className="card-title">⏱️ Average Transit Time by Stage</div>
+          {[['Admission → Triage','12 min','#0077b6'],['Triage → Department','34 min','#3b82f6'],['Department → Discharge Decision','5.2 days','#d97706'],['Decision → Actual Discharge','18 hrs','#dc2626']].map((s,i)=>(
+            <div key={i} style={{display:'flex',justifyContent:'space-between',padding:'8px 0',borderBottom:i<3?'1px solid #f1f5f9':'none',fontSize:12}}>
+              <span style={{color:'#475569'}}>{s[0]}</span><span style={{fontWeight:700,color:s[2]}}>{s[1]}</span>
+            </div>
+          ))}
+        </div>
+        <div className="card">
+          <div className="card-title">🔁 Most Common Readmit Triggers</div>
+          {['Medication non-adherence','Wound complications','Inadequate home support','Premature discharge'].map((t,i)=>(
+            <div key={i} style={{display:'flex',alignItems:'center',gap:8,padding:'8px 0',fontSize:12,color:'#475569'}}>
+              <span style={{width:6,height:6,borderRadius:'50%',background:'#dc2626'}}/>{t}
+            </div>
+          ))}
+        </div>
+        <div className="card">
+          <div className="card-title">✅ Bottleneck-Free Departments</div>
+          {['Surgery (4.2d avg)','General Medicine (4.8d avg)','Orthopedics (6.4d avg)'].map((t,i)=>(
+            <div key={i} style={{display:'flex',alignItems:'center',gap:8,padding:'8px 0',fontSize:12,color:'#475569'}}>
+              <span style={{width:6,height:6,borderRadius:'50%',background:'#16a34a'}}/>{t}
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* EXTRA: Department-to-destination matrix */}
+      <div className="card" style={{marginTop:16}}>
+        <div className="card-title">Department → Destination Flow Matrix</div>
+        <table className="data-table">
+          <thead><tr><th>Department</th><th>→ Home</th><th>→ SNF</th><th>→ Rehab</th><th>→ Readmit</th><th>→ Hospice</th></tr></thead>
+          <tbody>
+            {[['General Med',612,98,42,58,14],['Cardiology',298,112,38,71,12],['Surgery',342,48,52,18,8],
+              ['Orthopedics',186,124,86,24,6],['Neurology',124,98,68,86,18],['ICU',92,78,24,142,76]
+            ].map((r,i)=>(
+              <tr key={i}><td>{r[0]}</td><td>{r[1]}</td><td>{r[2]}</td><td>{r[3]}</td>
+                <td style={{color:'#dc2626',fontWeight:600}}>{r[4]}</td><td>{r[5]}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      {/* EXTRA: Hourly flow pattern */}
+      <div className="card" style={{marginTop:16}}>
+        <div className="card-title">Patient Flow by Admission Hour</div>
+        <BarChart data={[{label:'12-4AM',val:8,color:'#0077b6'},{label:'4-8AM',val:14,color:'#0077b6'},{label:'8-12PM',val:38,color:'#0077b6'},{label:'12-4PM',val:42,color:'#0077b6'},{label:'4-8PM',val:35,color:'#0077b6'},{label:'8-12AM',val:18,color:'#0077b6'}]} height={140}/>
+      </div>
+    </div>
+  );
+}
+
+// ── PAGE 5: PROJECT INFO ──
+function PageProjectInfo(){
+  const techs=['Python 3.10','Pandas','NumPy','Matplotlib','Seaborn','Scikit-learn','Streamlit','Google Colab','HTML/CSS/JS','React (CDN)','SQL (SQLite)','GitHub Pages'];
+  const wf=[['Data Generation','Synthetic dataset with realistic distributions'],['EDA','Exploratory analysis in Google Colab'],['ML Modeling','Logistic Regression for readmission risk'],['Dashboard','React + HTML interactive dashboards'],['Deployment','Streamlit Cloud + GitHub Pages']];
+  return(
+    <div className="page-anim">
+      <div className="section-header">
+        <div className="eyebrow">About</div>
+        <h2 className="sec-h2">Project Information</h2>
+        <p className="sec-p">MCA Mini Project — Care Transition Efficiency & Placement Outcome Analytics</p>
+      </div>
+      <div className="info-grid">
+        <div className="info-card">
+          <h3>🎯 Objective</h3>
+          <p>To analyze and visualize hospital care transition patterns, predict readmission risk, and optimize patient placement outcomes using data analytics techniques. The project helps healthcare administrators identify bottlenecks and high-risk patients before discharge.</p>
+        </div>
+        <div className="info-card">
+          <h3>⚙️ Technologies Used</h3>
+          <div className="tech-pills">{techs.map(t=><span key={t} className="tech-pill">{t}</span>)}</div>
+        </div>
+        <div className="info-card">
+          <h3>📦 Dataset Details</h3>
+          <ul>
+            <li>2,847 synthetic patient records</li>
+            <li>12 features per record (demographics, clinical, outcome)</li>
+            <li>6 departments, 4 discharge destinations</li>
+            <li>Generated using Python Faker + NumPy</li>
+            <li>Date range: Jan 2024 – Dec 2024</li>
+            <li>No real patient PII included</li>
+          </ul>
+        </div>
+        <div className="info-card">
+          <h3>🔄 Workflow</h3>
+          {wf.map(([t,d],i)=>(
+            <div className="wf-step" key={i}>
+              <div className="wf-num">{i+1}</div>
+              <div className="wf-text"><strong>{t}</strong> — {d}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* EXTRA: Scope & limitations */}
+      <div className="info-grid">
+        <div className="info-card">
+          <h3>📐 Project Scope</h3>
+          <ul>
+            <li>Covers 6 hospital departments across 1 fiscal year</li>
+            <li>Tracks full patient journey: admission → care → discharge</li>
+            <li>Includes readmission tracking within 30-day window</li>
+            <li>Interactive filtering by date range and risk threshold</li>
+            <li>Designed as a decision-support tool, not diagnostic system</li>
+          </ul>
+        </div>
+        <div className="info-card">
+          <h3>⚠️ Limitations</h3>
+          <ul>
+            <li>Dataset is synthetic — not sourced from real hospital records</li>
+            <li>No integration with live EHR/EMR systems (academic scope)</li>
+            <li>Risk scoring is rule-based, not a trained clinical model</li>
+            <li>Single-year data limits long-term trend analysis</li>
+          </ul>
+        </div>
+        <div className="info-card">
+          <h3>🚀 Future Enhancements</h3>
+          <ul>
+            <li>Connect to real Node.js + Express backend API</li>
+            <li>Persist data in SQL database instead of in-browser state</li>
+            <li>Add user authentication with role-based access control</li>
+            <li>Train an actual ML model on larger, real-world datasets</li>
+          </ul>
+        </div>
+        <div className="info-card">
+          <h3>📚 References & Learning Resources</h3>
+          <ul>
+            <li>React documentation — react.dev</li>
+            <li>Python Pandas & NumPy official docs</li>
+            <li>Healthcare analytics research papers (general reference)</li>
+            <li>Streamlit & GitHub Pages deployment guides</li>
+          </ul>
+        </div>
+      </div>
+
+      {/* EXTRA: Architecture diagram (text based) */}
+      <div className="card" style={{marginTop:0}}>
+        <div className="card-title">🏗️ System Architecture</div>
+        <div style={{display:'flex',gap:12,flexWrap:'wrap',alignItems:'center',justifyContent:'center',padding:'16px 0'}}>
+          {[['📊','Synthetic Data\n(Python/Colab)','#0077b6'],['→','','transparent'],['🗄️','SQLite\nDatabase','#3b82f6'],['→','','transparent'],['⚙️','Data Processing\n(Pandas/NumPy)','#d97706'],['→','','transparent'],['⚛️','React Frontend\n(this dashboard)','#7c3aed'],['→','','transparent'],['🖥️','Browser\nDisplay','#16a34a']].map(([icon,label,color],i)=>(
+            icon==='→'?<div key={i} style={{fontSize:18,color:'#94a3b8'}}>→</div>:
+            <div key={i} style={{textAlign:'center',background:'#f8fafc',border:`1px solid ${color}33`,borderRadius:10,padding:'12px 14px',minWidth:100}}>
+              <div style={{fontSize:20}}>{icon}</div>
+              <div style={{fontSize:10,color:'#475569',marginTop:4,whiteSpace:'pre-line',fontWeight:500}}>{label}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── PAGE 6: PREDICTIONS ──
+function PagePredictions(){
+  const preds=[{icon:'🛏️',label:'Avg Length of Stay',value:'6.4',sub:'days — 0.8d below target',color:'#0077b6',bg:'#0077b6'},{icon:'⚠️',label:'High Risk Patients',value:'47',sub:'score ≥ 70 — action needed',color:'#1d4ed8',bg:'#3b82f6'},{icon:'🔁',label:'Readmission %',value:'13.7%',sub:'30-day readmit rate',color:'#d97706',bg:'#d97706'},{icon:'🤖',label:'Model Accuracy',value:'86%',sub:'Logistic Regression AUC',color:'#dc2626',bg:'#dc2626'}];
+  const risks=[['Age > 75',84,'linear-gradient(90deg,#dc2626,#f97316)','#dc2626'],['ICU Admission',78,'linear-gradient(90deg,#dc2626,#f97316)','#dc2626'],['LOS > 10 days',72,'linear-gradient(90deg,#0077b6,#3b82f6)','#0077b6'],['Prior Readmission',65,'linear-gradient(90deg,#0077b6,#3b82f6)','#0077b6'],['Multiple Comorbidities',58,'linear-gradient(90deg,#0077b6,#3b82f6)','#0077b6']];
+  const recs=[['🏠','Enhance Home Care Coordination','28% of readmissions occur within 7 days. Assign discharge navigators to high-risk patients.'],['📋','Structured Discharge Checklists','Departments with checklists show 18% lower 30-day readmit rates.'],['📞','Post-Discharge Follow-Up Calls','48hr and 7-day calls reduce ICU-to-SNF readmissions by 22%.'],['🤝','SNF Partnership Reviews','Audit top 3 SNF partners showing >25% readmit rates quarterly.']];
+  return(
+    <div className="page-anim">
+      <div className="section-header">
+        <div className="eyebrow">AI Insights</div>
+        <h2 className="sec-h2">Predictions & Recommendations</h2>
+        <p className="sec-p">Data-driven insights based on analysis of historical placement data.</p>
+      </div>
+      <div className="grid-4" style={{marginBottom:16}}>
+        {preds.map((p,i)=>(
+          <div className="pred-card" key={i}>
+            <div className="pred-bg" style={{background:p.bg}}/>
+            <div className="pred-icon">{p.icon}</div>
+            <div className="pred-label">{p.label}</div>
+            <div className="pred-value" style={{color:p.color}}>{p.value}</div>
+            <div style={{fontSize:11,color:'#475569'}}>{p.sub}</div>
+          </div>
+        ))}
+      </div>
+      <div className="grid-2">
+        <div className="card">
+          <div className="card-title">Top High-Risk Patient Factors</div>
+          {risks.map(([name,pct,bg,color])=>(
+            <div className="risk-row" key={name}>
+              <span className="risk-name">{name}</span>
+              <div className="risk-bar-wrap"><div className="risk-bar" style={{width:`${pct}%`,background:bg}}/></div>
+              <span className="risk-pct" style={{color}}>{pct}%</span>
+            </div>
+          ))}
+        </div>
+        <div className="card">
+          <div className="card-title">💡 Recommendations</div>
+          <ul className="rec-list">
+            {recs.map(([icon,title,desc])=>(
+              <li className="rec-item" key={title}>
+                <span style={{fontSize:16,flexShrink:0}}>{icon}</span>
+                <div className="rec-text"><strong>{title}</strong> — {desc}</div>
+              </li>
+            ))}
+          </ul>
+        </div>
+      </div>
+
+      {/* EXTRA: High risk patient watchlist */}
+      <div className="card" style={{marginTop:16}}>
+        <div className="card-title">🔍 Current High-Risk Patient Watchlist</div>
+        <table className="data-table">
+          <thead><tr><th>Patient ID</th><th>Age</th><th>Dept</th><th>Risk Score</th><th>Key Factor</th><th>Recommended Action</th></tr></thead>
+          <tbody>
+            {[['PT-00211','82','ICU','94','Age + ICU + prior readmit','Assign care navigator immediately'],
+              ['PT-00198','77','Cardiology','89','LOS > 12 days','Schedule discharge planning review'],
+              ['PT-00187','79','Neurology','86','Multiple comorbidities','Coordinate SNF placement'],
+              ['PT-00176','74','ICU','83','Prior readmission within 30d','Enable 48hr follow-up call'],
+              ['PT-00165','81','General Med','80','Age + extended stay','Medication reconciliation review']
+            ].map((r,i)=>(
+              <tr key={i}><td>{r[0]}</td><td>{r[1]}</td><td>{r[2]}</td><td><span className="badge bg-red">{r[3]}</span></td><td>{r[4]}</td><td style={{fontSize:11}}>{r[5]}</td></tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      {/* EXTRA: Model performance metrics */}
+      <div className="grid-3" style={{marginTop:16}}>
+        <div className="card">
+          <div className="card-title">📊 Model Performance Metrics</div>
+          {[['Accuracy','86%','#0077b6'],['Precision','82%','#3b82f6'],['Recall','79%','#d97706'],['F1 Score','80.5%','#7c3aed']].map((m,i)=>(
+            <div key={i} style={{display:'flex',justifyContent:'space-between',padding:'7px 0',borderBottom:i<3?'1px solid #f1f5f9':'none',fontSize:12}}>
+              <span style={{color:'#475569'}}>{m[0]}</span><span style={{fontWeight:700,color:m[2]}}>{m[1]}</span>
+            </div>
+          ))}
+        </div>
+        <div className="card">
+          <div className="card-title">🎯 Confusion Matrix Summary</div>
+          {[['True Positives','38 (correctly flagged high-risk)','#16a34a'],['False Positives','9 (over-flagged)','#d97706'],['True Negatives','142 (correctly low-risk)','#16a34a'],['False Negatives','11 (missed high-risk)','#dc2626']].map((m,i)=>(
+            <div key={i} style={{display:'flex',justifyContent:'space-between',padding:'7px 0',borderBottom:i<3?'1px solid #f1f5f9':'none',fontSize:11}}>
+              <span style={{color:'#475569'}}>{m[0]}</span><span style={{fontWeight:700,color:m[2]}}>{m[1]}</span>
+            </div>
+          ))}
+        </div>
+        <div className="card">
+          <div className="card-title">📈 Projected Impact</div>
+          <div style={{fontSize:12,color:'#475569',lineHeight:1.8}}>
+            If recommendations are implemented:
+            <div style={{marginTop:8,display:'flex',flexDirection:'column',gap:6}}>
+              <div>• Readmission rate: <strong style={{color:'#16a34a'}}>13.7% → 10.2%</strong></div>
+              <div>• Avg LOS: <strong style={{color:'#16a34a'}}>6.4d → 5.8d</strong></div>
+              <div>• Est. annual savings: <strong style={{color:'#0077b6'}}>₹18.4L</strong></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* EXTRA: Implementation timeline */}
+      <div className="card" style={{marginTop:16}}>
+        <div className="card-title">🗓️ Suggested Implementation Timeline</div>
+        {[['Week 1-2','Deploy discharge navigator program for high-risk patients (score ≥ 70)'],['Week 3-4','Roll out structured discharge checklists across all 6 departments'],['Month 2','Begin 48hr and 7-day post-discharge follow-up call program'],['Month 3','Conduct first quarterly SNF partnership performance review']].map(([t,d],i)=>(
+          <div className="wf-step" key={i}>
+            <div className="wf-num">{i+1}</div>
+            <div className="wf-text"><strong>{t}</strong> — {d}</div>
+          </div>
+        ))}
+      </div>
+
+      {/* EXTRA: Full risk-scored patient list — Searchable + Sortable */}
+      <div className="card" style={{marginTop:16}}>
+        <div className="card-title">📋 Complete Risk-Scored Patient List (Top 15) <span style={{fontSize:10,color:'#3b82f6',fontWeight:600,marginLeft:6}}>🔍 Live Search + Sort</span></div>
+        <RiskScoreTable rows={[['PT-00211','ICU',94,82,3,2],['PT-00198','Cardiology',89,77,2,1],['PT-00187','Neurology',86,79,4,1],
+              ['PT-00176','ICU',83,74,2,2],['PT-00165','General Med',80,81,3,0],['PT-00154','Cardiology',77,68,2,1],
+              ['PT-00143','Orthopedics',74,73,1,1],['PT-00132','ICU',72,70,3,1],['PT-00121','Neurology',69,65,2,0],
+              ['PT-00110','General Med',66,76,1,1],['PT-00099','Cardiology',63,62,2,0],['PT-00088','Surgery',58,71,1,0],
+              ['PT-00077','Orthopedics',54,59,1,0],['PT-00066','General Med',49,55,1,0],['PT-00055','Surgery',42,48,0,0]
+        ]}/>
+      </div>
+    </div>
+  );
+}
+
+// ── RISK SCORE TABLE (search + sort) ──
+function RiskScoreTable({rows}){
+  const [query,setQuery]=useState('');
+  const [sortCol,setSortCol]=useState(2);
+  const [sortDir,setSortDir]=useState('desc');
+  const filtered=rows.filter(r=>!query || String(r[0]).toLowerCase().includes(query.toLowerCase()) || String(r[1]).toLowerCase().includes(query.toLowerCase()));
+  const sorted=[...filtered].sort((a,b)=>{
+    const av=a[sortCol],bv=b[sortCol];
+    let cmp = typeof av==='number' ? av-bv : String(av).localeCompare(String(bv));
+    return sortDir==='asc'?cmp:-cmp;
+  });
+  const handleSort=(idx)=>{
+    if(sortCol===idx){setSortDir(d=>d==='asc'?'desc':'asc');}
+    else{setSortCol(idx);setSortDir('asc');}
+  };
+  const cols=['Patient ID','Dept','Risk Score','Age','Comorbidities','Prior Readmits'];
+  return(
+    <div>
+      <input className="table-search" placeholder="🔍 Search by Patient ID or Department..." value={query} onChange={e=>setQuery(e.target.value)}/>
+      <table className="data-table">
+        <thead><tr>
+          {cols.map((c,i)=>(
+            <th key={i} onClick={()=>handleSort(i)} style={{cursor:'pointer',userSelect:'none'}}>
+              {c} {sortCol===i?(sortDir==='asc'?'▲':'▼'):<span style={{opacity:.25}}>⇅</span>}
+            </th>
+          ))}
+        </tr></thead>
+        <tbody>
+          {sorted.map((r,i)=>(
+            <tr key={i}>
+              <td>{r[0]}</td><td>{r[1]}</td>
+              <td><span className={`badge ${r[2]>=70?'bg-red':r[2]>=40?'bg-amber':'bg-green'}`}>{r[2]}</span></td>
+              <td>{r[3]}</td><td>{r[4]}</td><td>{r[5]}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+      {sorted.length===0 && <div style={{textAlign:'center',padding:20,color:'#94a3b8',fontSize:12}}>No matching records found.</div>}
+    </div>
+  );
+}
+
+// ── SIDEBAR ──
+function Sidebar({cur,onNav,onLogout}){
+  const items=[['🎛️','Dashboard'],['⚙️','Controls'],['🏥','Discharge Details'],['📊','Volume Over Time'],['🔀','Patient Flow'],['📁','Project Info'],['🤖','Predictions']];
+  return(
+    <div className="sidebar">
+      <div className="sidebar-logo">
+        <div className="s-icon">🏥</div>
+        <div className="s-title">CareTransit Analytics</div>
+        <div className="s-sub">MCA Mini Project</div>
+        <div className="react-badge">
+          <span className="react-dot"></span>
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none">
+            <circle cx="12" cy="12" r="2.2" fill="#61dafb"/>
+            <g stroke="#61dafb" strokeWidth="1.4" fill="none">
+              <ellipse cx="12" cy="12" rx="10" ry="4.2"/>
+              <ellipse cx="12" cy="12" rx="10" ry="4.2" transform="rotate(60 12 12)"/>
+              <ellipse cx="12" cy="12" rx="10" ry="4.2" transform="rotate(120 12 12)"/>
+            </g>
+          </svg>
+          <span>React 18 — Live</span>
+        </div>
+      </div>
+      <div className="nav-list">
+        {items.map(([icon,label],i)=>(
+          <div key={i} className={`nav-item${cur===i?' active':''}`} onClick={()=>onNav(i)}>
+            <span className="n-icon">{icon}</span>{label}
+          </div>
+        ))}
+      </div>
+      <div className="sidebar-footer">
+        <div className="user-badge">
+          <div className="user-avatar">A</div>
+          <div style={{flex:1}}><div className="u-name">Admin</div><div className="u-role">Analyst</div></div>
+          <button className="btn-logout" onClick={onLogout}>Exit</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── LOGIN PAGE ──
+function LoginPage({onLogin}){
+  const [user,setUser]=useState('');
+  const [pass,setPass]=useState('');
+  const [err,setErr]=useState('');
+  const login=()=>{
+    if(user==='admin'&&pass==='admin123'){onLogin();}
+    else setErr('❌ Invalid credentials. Try admin / admin123');
+  };
+  useEffect(()=>{const h=e=>{if(e.key==='Enter')login();};window.addEventListener('keydown',h);return()=>window.removeEventListener('keydown',h);},[user,pass]);
+  return(
+    <div className="login-bg">
+      {/* LEFT — Illustration panel */}
+      <div className="login-left">
+        <svg className="hosp-illustration" viewBox="0 0 600 800" preserveAspectRatio="xMidYMax slice">
+          {/* Simple hospital building skyline illustration */}
+          <g opacity="0.18">
+            <rect x="60" y="420" width="160" height="380" fill="#fff"/>
+            <rect x="240" y="320" width="200" height="480" fill="#fff"/>
+            <rect x="460" y="480" width="120" height="320" fill="#fff"/>
+            {/* windows */}
+            {Array.from({length:8}).map((_,r)=>Array.from({length:4}).map((_,c)=>(
+              <rect key={`a${r}${c}`} x={80+c*32} y={440+r*38} width="16" height="20" fill="#0c4a6e"/>
+            )))}
+            {Array.from({length:10}).map((_,r)=>Array.from({length:5}).map((_,c)=>(
+              <rect key={`b${r}${c}`} x={258+c*32} y={345+r*38} width="16" height="20" fill="#0c4a6e"/>
+            )))}
+            {Array.from({length:6}).map((_,r)=>Array.from({length:3}).map((_,c)=>(
+              <rect key={`c${r}${c}`} x={480+c*32} y={500+r*38} width="16" height="20" fill="#0c4a6e"/>
+            )))}
+            {/* cross on tall building */}
+            <rect x="328" y="270" width="14" height="40" fill="#fff"/>
+            <rect x="313" y="285" width="44" height="14" fill="#fff"/>
+          </g>
+        </svg>
+
+        <div className="floating-card fc1">
+          <div className="fc-icon" style={{background:'#dcfce7'}}>📈</div>
+          <div><div className="fc-text-title">91.3% Success Rate</div><div className="fc-text-sub">Placement outcomes</div></div>
+        </div>
+        <div className="floating-card fc2">
+          <div className="fc-icon" style={{background:'#dbeafe'}}>🏥</div>
+          <div><div className="fc-text-title">2,847 Patients</div><div className="fc-text-sub">Tracked this year</div></div>
+        </div>
+
+        <div className="left-content">
+          <div className="left-badge">🏥 Healthcare Analytics Platform</div>
+          <div className="left-title">Care Transition &<br/>Placement Outcome<br/>Analytics</div>
+          <p className="left-sub">A real-time dashboard for monitoring hospital discharge efficiency, patient flow, and care coordination outcomes.</p>
+          <div className="left-stats">
+            <div><div className="left-stat-num">6.4d</div><div className="left-stat-label">Avg Length of Stay</div></div>
+            <div><div className="left-stat-num">13.7%</div><div className="left-stat-label">Readmission Rate</div></div>
+            <div><div className="left-stat-num">7</div><div className="left-stat-label">Hospital Departments</div></div>
+          </div>
+        </div>
+      </div>
+
+      {/* RIGHT — Login form */}
+      <div className="login-right">
+        <div className="login-card">
+          <div className="login-logo">
+            <div className="login-icon">
+              <svg viewBox="0 0 24 24" fill="none">
+                <path d="M10 2h4v8h8v4h-8v8h-4v-8H2v-4h8V2z" fill="#fff"/>
+              </svg>
+            </div>
+            <div className="login-title">Welcome Back</div>
+            <div className="login-sub">Sign in to access the CareTransit dashboard</div>
+          </div>
+          <div className="field-group">
+            <label className="field-label">Username</label>
+            <input className="field-input" placeholder="admin" value={user} onChange={e=>setUser(e.target.value)} autoComplete="off"/>
+          </div>
+          <div className="field-group">
+            <label className="field-label">Password</label>
+            <input className="field-input" type="password" placeholder="••••••••" value={pass} onChange={e=>setPass(e.target.value)}/>
+          </div>
+          {err&&<div className="err-msg">{err}</div>}
+          <button className="btn-login" onClick={login}>Sign In to Dashboard →</button>
+          <div className="login-hint">Demo: <span>admin</span> / <span>admin123</span></div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── MAIN APP ──
+const PAGES=['Dashboard Overview','Controls & Settings','Discharge Details','Volume Over Time','Patient Flow (Sankey)','Project Information','Predictions & Insights'];
+
+function App(){
+  const [loggedIn,setLoggedIn]=useState(false);
+  const [cur,setCur]=useState(0);
+  const [dir,setDir]=useState('next'); // 'next' | 'prev' | 'dot'
+  // ── SHARED REACT STATE (Controls → Dashboard live update) ──
+  const [thresh,setThresh]=useState(70);
+  const [stayAlert,setStayAlert]=useState(10);
+  const [readWin,setReadWin]=useState(30);
+  const N=PAGES.length;
+  const date=new Date().toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'});
+
+  // Derived KPIs react to slider changes
+  const highRisk=Math.round(47*(thresh/70));
+  const extStay=Math.round(129*(10/stayAlert));
+  const readRate=(13.7*(readWin/30)).toFixed(1);
+  const placement=(100-parseFloat(readRate)).toFixed(1);
+
+  const pageComponentNames=['PageDashboard','PageControls','PageDischarge','PageVolume','PageSankey','PageProjectInfo','PagePredictions'];
+
+  // ── REACT COMPONENT TREE LOGGING ──
+  useEffect(()=>{
+    console.log('%c⚛️ React Component Tree Mounted','background:#7c3aed;color:#fff;padding:4px 10px;border-radius:4px;font-weight:bold;');
+    console.log('%cApp\n├─ Sidebar\n├─ Topbar\n├─ <Page Components> (7 total)\n│   ├─ PageDashboard\n│   ├─ PageControls\n│   ├─ PageDischarge\n│   ├─ PageVolume\n│   ├─ PageSankey\n│   ├─ PageProjectInfo\n│   └─ PagePredictions\n└─ NavFooter','color:#0077b6;font-family:monospace;font-size:12px;');
+    console.log('%cReact version:','font-weight:bold;color:#475569;', React.version);
+    console.log('%cHooks in use:','font-weight:bold;color:#475569;', 'useState (6 instances), useEffect (3 instances), useRef (2 instances)');
+  },[]);
+
+  useEffect(()=>{
+    console.log(
+      `%c⚛️ Render → <${pageComponentNames[cur]}/>`,
+      'background:#0077b6;color:#fff;padding:3px 8px;border-radius:4px;font-weight:bold;'
+    );
+    console.log('%cProps passed:','color:#94a3b8;font-size:11px;', {page:cur+1, title:PAGES[cur]});
+  },[cur]);
+
+  useEffect(()=>{
+    console.log(
+      '%c⚛️ State Update → useState(thresh, stayAlert, readWin)',
+      'background:#7c3aed;color:#fff;padding:3px 8px;border-radius:4px;font-weight:bold;'
+    );
+    console.table({
+      'High Risk Threshold': thresh,
+      'Extended Stay Alert (days)': stayAlert,
+      'Readmission Window (days)': readWin,
+      'Derived: High Risk Count': highRisk,
+      'Derived: Extended Stay Count': extStay,
+      'Derived: Readmission Rate %': readRate,
+    });
+  },[thresh,stayAlert,readWin]);
+
+  const pages=[
+    <PageDashboard highRisk={highRisk} extStay={extStay} readRate={readRate} placement={placement} thresh={thresh}/>,
+    <PageControls thresh={thresh} setThresh={setThresh} stayAlert={stayAlert} setStayAlert={setStayAlert} readWin={readWin} setReadWin={setReadWin} onApply={()=>{setDir('prev');setCur(0);}}/>,
+    <PageDischarge/>,<PageVolume/>,<PageSankey/>,<PageProjectInfo/>,<PagePredictions/>
+  ];
+
+  if(!loggedIn)return <LoginPage onLogin={()=>{console.log('%c⚛️ Auth State → loggedIn: true','background:#16a34a;color:#fff;padding:3px 8px;border-radius:4px;font-weight:bold;');setLoggedIn(true);}}/>;
+  return(
+    <div className="shell">
+      <Sidebar cur={cur} onNav={(i)=>{setDir(i>cur?'next':i<cur?'prev':'dot');setCur(i);}} onLogout={()=>{setLoggedIn(false);setCur(0);}}/>
+      <div className="main-area">
+        <div className="topbar">
+          <div className="topbar-left">
+            <span className="page-badge">PAGE {cur+1} / {N}</span>
+            <span className="page-title-top">{PAGES[cur]}</span>
+          </div>
+          <div className="topbar-right">
+            <button onClick={()=>{
+              console.log('%c⚛️ ════════ FULL REACT TREE SNAPSHOT ════════','background:#1e293b;color:#7dd3fc;padding:6px 12px;border-radius:4px;font-weight:bold;font-size:13px;');
+              console.log('%cApp (root)','color:#7c3aed;font-weight:bold;');
+              console.log('  └─ loggedIn:', loggedIn, '| cur:', cur);
+              console.log('  └─ Sidebar [props: cur, onNav, onLogout]');
+              console.log(`  └─ ${pageComponentNames[cur]} [active, rendering now]`);
+              console.log('       └─ KPICard ×4 (reusable component)');
+              console.log('       └─ BarChart (reusable component, props: data, height)');
+              console.log('%cClick sliders in Controls page and re-open console to see live state updates!','color:#16a34a;font-style:italic;');
+            }} style={{background:'#1e293b',color:'#7dd3fc',border:'none',borderRadius:6,padding:'5px 12px',fontSize:10,fontWeight:700,cursor:'pointer',fontFamily:'monospace'}}>
+              ⚛️ Log Component Tree
+            </button>
+            <div className="live-dot"/><span className="live-label">Live</span>
+            <div className="date-chip">{date}</div>
+          </div>
+        </div>
+        <div className="content">
+          <div key={cur} className={dir==='next'?'page-anim-next':dir==='prev'?'page-anim-prev':'page-anim-dot'}>{pages[cur]}</div>
+        </div>
+        <div className="nav-footer">
+          <button className="btn-nav" onClick={()=>{setDir('prev');setCur(c=>c-1);}} disabled={cur===0}>← Previous</button>
+          <div className="page-dots">
+            {Array.from({length:N},(_,i)=>(
+              <div key={i} className={`dot${cur===i?' active-dot':''}`} onClick={()=>{setDir(i>cur?'next':i<cur?'prev':'dot');setCur(i);}}/>
+            ))}
+          </div>
+          <button className="btn-nav primary" onClick={()=>{setDir('next');setCur(c=>c+1);}} disabled={cur===N-1}>
+            {cur===N-1?'✓ End':'Next →'}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+console.log('%c🏥 CareTransit Analytics — React 18 Application','background:linear-gradient(135deg,#7c3aed,#ec4899);color:#fff;padding:8px 16px;border-radius:6px;font-weight:bold;font-size:14px;');
+console.log('%cOpen this console while using the app to see live React component renders, state updates, and the component tree.','color:#64748b;font-style:italic;');
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
+</script>
+</body>
+</html>
